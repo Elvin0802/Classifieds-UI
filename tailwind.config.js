@@ -2,16 +2,38 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
       colors: {
-        primary: '#1976d2',
-        secondary: '#2e7d32',
-        danger: '#d32f2f'
-      }
+        primary: '#3490dc',
+        secondary: '#ffed4a',
+        danger: '#e3342f',
+        success: '#38c172',
+        info: '#6574cd',
+        warning: '#f6993f',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    require('daisyui')
+  ],
+  daisyui: {
+    themes: [
+      {
+        mytheme: {
+          "primary": "#3490dc",
+          "secondary": "#ffed4a",
+          "accent": "#6574cd",
+          "neutral": "#2a2e37",
+          "base-100": "#ffffff",
+          "info": "#6574cd",
+          "success": "#38c172",
+          "warning": "#f6993f",
+          "error": "#e3342f",
+        },
+      },
+    ],
+  },
 } 

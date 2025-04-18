@@ -1,209 +1,393 @@
-import api from './api';
-import authService from './authService';
+import axios from 'axios';
+import { API_URL } from '../config';
 
-const logError = (methodName, error) => {
-  console.error(`[AdService] ${methodName} hatası:`, {
-    message: error.message,
-    status: error.response?.status,
-    data: error.response?.data,
-    stack: error.stack
-  });
-};
+const ADS_URL = `${API_URL}/Ads`;
 
-const logInfo = (methodName, data) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.info(`[AdService] ${methodName}:`, data);
-  }
-};
-
-// Boş GUID değeri
-const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
-
-// Mevcut kullanıcı ID'sini alır
-const getCurrentUserId = async () => {
-  try {
-    if (authService.isAuthenticated()) {
-      const userData = await authService.getCurrentUser();
-      return userData.id || EMPTY_GUID;
-    }
-    return EMPTY_GUID;
-  } catch (error) {
-    console.error("Kullanıcı ID'si alınırken hata:", error);
-    return EMPTY_GUID;
-  }
+/**
+ * İlan durumları
+ */
+export const AdStatus = {
+  PENDING: 0,
+  ACTIVE: 1,
+  REJECTED: 2,
+  SOLD: 3,
+  EXPIRED: 4
 };
 
 const adService = {
-  getAllAds: async (filters = {}) => {
+  /**
+   * İlanları getir (filtreleme, sıralama ve sayfalama parametreleri ile)
+   * @param {Object} params - Sorgu parametreleri
+   * @returns {Promise<Object>} İlan listesi sonucu
+   * @example
+   * // Örnek parametre yapısı
+   * {
+   *   pageNumber: 1,
+   *   pageSize: 10,
+   *   sortBy: "updatedAt",
+   *   isDescending: true,
+   *   searchTitle: "Araba", // Aramak için, kullanmıyorsak null gönder
+   *   isFeatured: true, // Öne çıkan ilanlar için
+   *   minPrice: 1000, // Minimum fiyat filtresi
+   *   maxPrice: 5000, // Maksimum fiyat filtresi
+   *   categoryId: "guid", // Kategori filtresi
+   *   mainCategoryId: "guid", // Ana kategori filtresi
+   *   locationId: "guid", // Lokasyon filtresi
+   *   currentAppUserId: "guid", // Mevcut kullanıcının ID'si
+   *   searchedAppUserId: "guid", // Aranan kullanıcının ID'si
+   *   adStatus: 1, // İlan durumu (0: Beklemede, 1: Aktif, 2: Reddedilmiş, 3: Satıldı, 4: Süresi Dolmuş)
+   *   subCategoryValues: { // Alt kategori değerleri
+   *     "altKategoriId1": "değer1",
+   *     "altKategoriId2": "değer2"
+   *   }
+   * }
+   */
+  getAll: async (params = {}) => {
     try {
-      // Kullanıcı ID'sini al
-      const currentUserId = await getCurrentUserId();
-      
-      const requestData = {
-        pageNumber: filters.pageNumber !== undefined ? filters.pageNumber : 1,
-        pageSize: filters.pageSize !== undefined ? filters.pageSize : 32,
-        sortBy: filters.sortBy || null,
-        isDescending: filters.sortBy === "oldest" ? false : true,
-        searchTitle: filters.searchTerm || null,
-        isFeatured: filters.isFeatured !== undefined ? filters.isFeatured : false,
-        minPrice: filters.minPrice !== undefined && filters.minPrice !== "" ? filters.minPrice : null,
-        maxPrice: filters.maxPrice !== undefined && filters.maxPrice !== "" ? filters.maxPrice : null,
-        categoryId: filters.categoryId || null,
-        mainCategoryId: filters.mainCategoryId || null,
-        locationId: filters.locationId || null,
-        currentAppUserId: currentUserId, // Güncel kullanıcı ID'si
-        searchedAppUserId: filters.searchedAppUserId || null,
-        adStatus: filters.adStatus !== undefined ? filters.adStatus : 0,
-        subCategoryValues: Object.keys(filters.subCategoryValues || {}).length > 0 ? filters.subCategoryValues : null
-      };
-
-      logInfo('getAllAds.request', requestData);
-      const response = await api.post('/Ads/GetAll', requestData);
-      logInfo('getAllAds.response', response.data);
-      return response.data;
-    } catch (error) {
-      logError('getAllAds', error);
-      throw new Error('İlanlar alınırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
-    }
-  },
-  
-  getAdById: async (id) => {
-    try {
-      // Kullanıcı ID'sini al
-      const currentUserId = await getCurrentUserId();
-      
-      logInfo('getAdById.request', { id, currentUserId });
-      const response = await api.get(`/Ads/GetById?Id=${id}&CurrentUserId=${currentUserId}`);
-      logInfo('getAdById.response', response.data);
-      return response.data;
-    } catch (error) {
-      logError('getAdById', error);
-      throw new Error('İlan detayları alınırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
-    }
-  },
-  
-  createAd: async (adData) => {
-    try {
-      logInfo('createAd.request', adData);
-      
-      // Form verilerini oluştur
-      const formData = new FormData();
-      
-      // Temel ad bilgilerini ekle
-      formData.append('title', adData.title);
-      formData.append('description', adData.description);
-      formData.append('price', adData.price);
-      formData.append('categoryId', adData.categoryId);
-      formData.append('locationCityId', adData.locationCityId);
-      formData.append('locationDistrictId', adData.locationDistrictId);
-      formData.append('isNew', adData.isNew);
-      
-      // Özellikleri ekle
-      if (adData.properties && adData.properties.length > 0) {
-        adData.properties.forEach((prop, index) => {
-          formData.append(`properties[${index}].propertyId`, prop.propertyId);
-          formData.append(`properties[${index}].value`, prop.value);
-        });
-      }
-      
-      // Resimleri ekle
-      if (adData.images && adData.images.length > 0) {
-        adData.images.forEach(image => {
-          formData.append('images', image);
-        });
-      }
-      
-      const response = await api.post('/Ads/CreateAd', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      // Null değerleri temizle
+      const cleanParams = Object.keys(params).reduce((acc, key) => {
+        if (params[key] !== null && params[key] !== undefined) {
+          acc[key] = params[key];
         }
-      });
+        return acc;
+      }, {});
       
-      logInfo('createAd.response', response.data);
+      const response = await axios.post(`${ADS_URL}/GetAll`, cleanParams);
       return response.data;
     } catch (error) {
-      logError('createAd', error);
-      throw new Error('İlan oluşturulurken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlanlar alınırken hata:', error);
+      throw error;
     }
   },
   
-  updateAd: async (updateData) => {
+  /**
+   * İlan detayını getir
+   * @param {string} adId - İlan ID'si
+   * @returns {Promise<Object>} İlan detayı sonucu
+   */
+  getById: async (adId) => {
     try {
-      logInfo('updateAd.request', updateData);
-      const response = await api.put('/Ads/UpdateAd', updateData);
-      logInfo('updateAd.response', response.data);
+      const response = await axios.get(`${ADS_URL}/GetById`, {
+        params: { Id: adId }
+      });
       return response.data;
     } catch (error) {
-      logError('updateAd', error);
-      throw new Error('İlan güncellenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlan detayı alınırken hata:', error);
+      throw error;
     }
   },
   
-  deleteAd: async (adId) => {
+  /**
+   * Yeni ilan oluştur
+   * @param {Object} adData - İlan verileri
+   * @returns {Promise<Object>} Oluşturma sonucu
+   * @example
+   * // Örnek veri yapısı
+   * {
+   *   title: "İlan Başlığı",
+   *   description: "İlan Açıklaması",
+   *   price: 1000,
+   *   isNew: true,
+   *   categoryId: "guid",
+   *   mainCategoryId: "guid",
+   *   locationId: "guid",
+   *   subCategoryValues: [
+   *     {
+   *       value: "değer",
+   *       subCategoryId: "guid"
+   *     }
+   *   ]
+   * }
+   */
+  create: async (adData) => {
     try {
-      logInfo('deleteAd.request', { adId });
-      const response = await api.delete(`/Ads/DeleteAd/${adId}`);
-      logInfo('deleteAd.response', response.data);
+      const response = await axios.post(`${ADS_URL}/Create`, adData);
       return response.data;
     } catch (error) {
-      logError('deleteAd', error);
-      throw new Error('İlan silinirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlan oluşturulurken hata:', error);
+      throw error;
     }
   },
   
+  /**
+   * İlan güncelle
+   * @param {Object} adData - Güncellenecek ilan verileri
+   * @returns {Promise<Object>} Güncelleme sonucu
+   * @example
+   * // Örnek veri yapısı
+   * {
+   *   id: "guid",
+   *   description: "Yeni açıklama",
+   *   price: 1500,
+   *   isNew: false
+   * }
+   */
+  update: async (adData) => {
+    try {
+      const response = await axios.post(`${ADS_URL}/Update`, adData);
+      return response.data;
+    } catch (error) {
+      console.error('İlan güncellenirken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * İlan sil
+   * @param {string} adId - İlan ID'si
+   * @returns {Promise<Object>} Silme sonucu
+   */
+  delete: async (adId) => {
+    try {
+      const response = await axios.get(`${ADS_URL}/Delete`, {
+        params: { Id: adId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('İlan silinirken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * İlanı seç (favori/saklanan)
+   * @param {string} adId - İlan ID'si
+   * @returns {Promise<Object>} Seçim sonucu
+   */
   selectAd: async (adId) => {
     try {
-      logInfo('selectAd.request', { adId });
-      const response = await api.post(`/Ads/SelectAd/${adId}`);
-      logInfo('selectAd.response', response.data);
+      const response = await axios.post(`${ADS_URL}/SelectAd`, {
+        selectAdId: adId
+      });
       return response.data;
     } catch (error) {
-      logError('selectAd', error);
-      throw new Error('İlan favorilere eklenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlan seçilirken hata:', error);
+      throw error;
     }
   },
   
+  /**
+   * İlan seçimini kaldır (favori/saklanan)
+   * @param {string} adId - İlan ID'si
+   * @returns {Promise<Object>} Seçim kaldırma sonucu
+   */
   unselectAd: async (adId) => {
     try {
-      logInfo('unselectAd.request', { adId });
-      const response = await api.post(`/Ads/UnselectAd/${adId}`);
-      logInfo('unselectAd.response', response.data);
+      const response = await axios.post(`${ADS_URL}/UnselectAd`, {
+        selectAdId: adId
+      });
       return response.data;
     } catch (error) {
-      logError('unselectAd', error);
-      throw new Error('İlan favorilerden kaldırılırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlan seçimi kaldırılırken hata:', error);
+      throw error;
     }
   },
   
-  // VIP ilan fiyatlandırma seçeneklerini getiren metot
+  /**
+   * Fiyatlandırma seçeneklerini getir
+   * @returns {Promise<Object>} Fiyatlandırma seçenekleri
+   */
   getPricingOptions: async () => {
     try {
-      logInfo('getPricingOptions.request', {});
-      const response = await api.get('/Ads/GetPricingOptions');
-      logInfo('getPricingOptions.response', response.data);
+      const response = await axios.get(`${ADS_URL}/GetPricingOptions`);
       return response.data;
     } catch (error) {
-      logError('getPricingOptions', error);
-      throw new Error('VIP fiyatlandırma seçenekleri alınırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('Fiyatlandırma seçenekleri alınırken hata:', error);
+      throw error;
     }
   },
   
-  // İlanı VIP yapma metodu
-  featureAd: async (adId, days) => {
+  /**
+   * İlanı öne çıkar
+   * @param {string} adId - İlan ID'si
+   * @param {number} durationDays - Öne çıkarma süresi (gün)
+   * @returns {Promise<Object>} Öne çıkarma sonucu
+   */
+  featureAd: async (adId, durationDays) => {
     try {
-      const requestData = {
-        adId: adId,
-        appUserId: EMPTY_GUID,
-        durationDays: days
-      };
-      
-      logInfo('featureAd.request', requestData);
-      const response = await api.post('/Ads/FeatureAd', requestData);
-      logInfo('featureAd.response', response.data);
+      const response = await axios.post(`${ADS_URL}/FeatureAd`, {
+        adId,
+        durationDays
+      });
       return response.data;
     } catch (error) {
-      logError('featureAd', error);
-      throw new Error('İlan VIP yapılırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlan öne çıkarılırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * İlan durumunu değiştir (admin)
+   * @param {string} adId - İlan ID'si
+   * @param {number} newAdStatus - Yeni durum (0: Pending, 1: Active, 2: Rejected, 3: Sold, 4: Expired)
+   * @returns {Promise<Object>} Durum değiştirme sonucu
+   */
+  changeAdStatus: async (adId, newAdStatus) => {
+    try {
+      const response = await axios.post(`${ADS_URL}/ChangeAdStatus`, {
+        adId,
+        newAdStatus
+      });
+      return response.data;
+    } catch (error) {
+      console.error('İlan durumu değiştirilirken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * İlan resmi yükle
+   * @param {string} adId - İlan ID'si
+   * @param {File} imageFile - Yüklenecek resim dosyası
+   * @returns {Promise<Object>} Yükleme sonucu
+   */
+  uploadAdImage: async (adId, imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('adId', adId);
+      
+      const response = await axios.post(`${ADS_URL}/UploadImage`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('İlan resmi yüklenirken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Öne çıkan ilanları getir
+   * @param {Object} params - Sorgu parametreleri (sayfalama, sıralama, vb.)
+   * @returns {Promise<Object>} Öne çıkan ilanlar sonucu
+   */
+  getFeaturedAds: async (params = {}) => {
+    try {
+      const featuredParams = {
+        ...params,
+        isFeatured: true
+      };
+      return await adService.getAll(featuredParams);
+    } catch (error) {
+      console.error('Öne çıkan ilanlar alınırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Popüler ilanları getir
+   * @param {Object} params - Sorgu parametreleri
+   * @returns {Promise<Object>} Popüler ilanlar sonucu
+   */
+  getPopularAds: async (params = {}) => {
+    try {
+      const popularParams = {
+        ...params,
+        sortBy: "viewCount",
+        isDescending: true
+      };
+      return await adService.getAll(popularParams);
+    } catch (error) {
+      console.error('Popüler ilanlar alınırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * En yeni ilanları getir
+   * @param {Object} params - Sorgu parametreleri
+   * @returns {Promise<Object>} En yeni ilanlar sonucu
+   */
+  getRecentAds: async (params = {}) => {
+    try {
+      const recentParams = {
+        ...params,
+        sortBy: "createdAt",
+        isDescending: true
+      };
+      return await adService.getAll(recentParams);
+    } catch (error) {
+      console.error('En yeni ilanlar alınırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Bir kullanıcının ilanlarını getir
+   * @param {string} userId - Kullanıcı ID'si
+   * @param {Object} params - Diğer sorgu parametreleri
+   * @returns {Promise<Object>} Kullanıcının ilanları
+   */
+  getUserAds: async (userId, params = {}) => {
+    try {
+      const userAdsParams = {
+        ...params,
+        searchedAppUserId: userId
+      };
+      return await adService.getAll(userAdsParams);
+    } catch (error) {
+      console.error('Kullanıcı ilanları alınırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Bir kategorideki ilanları getir
+   * @param {string} categoryId - Kategori ID'si
+   * @param {Object} params - Diğer sorgu parametreleri
+   * @returns {Promise<Object>} Kategorideki ilanlar
+   */
+  getCategoryAds: async (categoryId, params = {}) => {
+    try {
+      const categoryAdsParams = {
+        ...params,
+        categoryId
+      };
+      return await adService.getAll(categoryAdsParams);
+    } catch (error) {
+      console.error('Kategori ilanları alınırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Bir ana kategorideki ilanları getir
+   * @param {string} mainCategoryId - Ana kategori ID'si
+   * @param {Object} params - Diğer sorgu parametreleri
+   * @returns {Promise<Object>} Ana kategorideki ilanlar
+   */
+  getMainCategoryAds: async (mainCategoryId, params = {}) => {
+    try {
+      const mainCategoryAdsParams = {
+        ...params,
+        mainCategoryId
+      };
+      return await adService.getAll(mainCategoryAdsParams);
+    } catch (error) {
+      console.error('Ana kategori ilanları alınırken hata:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Bir lokasyondaki ilanları getir
+   * @param {string} locationId - Lokasyon ID'si
+   * @param {Object} params - Diğer sorgu parametreleri
+   * @returns {Promise<Object>} Lokasyondaki ilanlar
+   */
+  getLocationAds: async (locationId, params = {}) => {
+    try {
+      const locationAdsParams = {
+        ...params,
+        locationId
+      };
+      return await adService.getAll(locationAdsParams);
+    } catch (error) {
+      console.error('Lokasyon ilanları alınırken hata:', error);
+      throw error;
     }
   }
 };

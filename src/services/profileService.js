@@ -1,128 +1,243 @@
-import api from './api';
+import axios from 'axios';
+import { API_URL } from '../config';
 
-const logError = (methodName, error) => {
-  console.error(`[ProfileService] ${methodName} hatası:`, {
-    message: error.message,
-    status: error.response?.status,
-    data: error.response?.data,
-    stack: error.stack
-  });
-};
-
-const logInfo = (methodName, data) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.info(`[ProfileService] ${methodName}:`, data);
-  }
-};
+const PROFILE_URL = `${API_URL}/Profile`;
 
 const profileService = {
+  /**
+   * Kullanıcı bilgilerini getirir
+   * @returns {Promise<Object>} Kullanıcı bilgileri
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false,
+   *   "data": {
+   *     "item": {
+   *       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *       "createdAt": "2025-04-18T19:40:49.102Z",
+   *       "updatedAt": "2025-04-18T19:40:49.102Z",
+   *       "name": "string",
+   *       "email": "string",
+   *       "phoneNumber": "string",
+   *       "isAdmin": true
+   *     }
+   *   }
+   * }
+   */
   getUserData: async () => {
     try {
-      logInfo('getUserData.request', {});
-      const response = await api.post('/Profile/GetUserData');
-      logInfo('getUserData.response', response.data);
+      const response = await axios.post(`${PROFILE_URL}/GetUserData`);
       return response.data;
     } catch (error) {
-      logError('getUserData', error);
-      throw new Error('Kullanıcı bilgileri alınamadı: ' + (error.response?.data?.message || error.message));
+      console.error('Kullanıcı bilgileri alınırken hata:', error);
+      throw error;
     }
   },
-  
-  changePassword: async (data) => {
+
+  /**
+   * Kullanıcının aktif ilanlarını getirir
+   * @param {Object} params - Sayfalama parametreleri
+   * @returns {Promise<Object>} Aktif ilanlar listesi
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false,
+   *   "data": {
+   *     "items": [
+   *       {
+   *         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *         "title": "string",
+   *         "price": 0,
+   *         "isNew": true,
+   *         "isSelected": true,
+   *         "isFeatured": true,
+   *         "locationCityName": "string",
+   *         "mainImageUrl": "string",
+   *         "updatedAt": "2025-04-18T19:41:30.641Z"
+   *       }
+   *     ],
+   *     "pageNumber": 0,
+   *     "pageSize": 0,
+   *     "totalCount": 0,
+   *     "totalPages": 0
+   *   }
+   * }
+   */
+  getActiveAds: async (params = {}) => {
     try {
-      logInfo('changePassword.request', {
-        userId: data.userId,
-        hasOldPassword: !!data.oldPassword,
-        hasNewPassword: !!data.newPassword
-      });
-      
-      const response = await api.post('/Users/change-password', {
-        userId: data.userId,
-        oldPassword: data.oldPassword,
-        newPassword: data.newPassword,
-        newPasswordConfirm: data.confirmPassword
-      });
-      
-      logInfo('changePassword.response', response.data);
+      const response = await axios.get(`${PROFILE_URL}/GetActiveAds`, { params });
       return response.data;
     } catch (error) {
-      logError('changePassword', error);
-      throw new Error('Şifre değiştirilemedi: ' + (error.response?.data?.message || error.message));
+      console.error('Aktif ilanlar alınırken hata:', error);
+      throw error;
     }
   },
-  
-  getActiveAds: async () => {
+
+  /**
+   * Kullanıcının bekleyen ilanlarını getirir
+   * @param {Object} params - Sayfalama parametreleri
+   * @returns {Promise<Object>} Bekleyen ilanlar listesi
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false,
+   *   "data": {
+   *     "items": [
+   *       {
+   *         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *         "title": "string",
+   *         "price": 0,
+   *         "isNew": true,
+   *         "isSelected": true,
+   *         "isFeatured": true,
+   *         "locationCityName": "string",
+   *         "mainImageUrl": "string",
+   *         "updatedAt": "2025-04-18T19:41:56.114Z"
+   *       }
+   *     ],
+   *     "pageNumber": 0,
+   *     "pageSize": 0,
+   *     "totalCount": 0,
+   *     "totalPages": 0
+   *   }
+   * }
+   */
+  getPendingAds: async (params = {}) => {
     try {
-      logInfo('getActiveAds.request', {});
-      const response = await api.post('/Profile/GetActiveAds');
-      logInfo('getActiveAds.response', { 
-        totalCount: response.data.totalCount, 
-        itemsCount: response.data.items?.length || 0 
-      });
+      const response = await axios.get(`${PROFILE_URL}/GetPendingAds`, { params });
       return response.data;
     } catch (error) {
-      logError('getActiveAds', error);
-      throw new Error('Aktif ilanlar alınamadı: ' + (error.response?.data?.message || error.message));
+      console.error('Bekleyen ilanlar alınırken hata:', error);
+      throw error;
     }
   },
-  
-  getPendingAds: async () => {
+
+  /**
+   * Kullanıcının süresi dolmuş ilanlarını getirir
+   * @param {Object} params - Sayfalama parametreleri
+   * @returns {Promise<Object>} Süresi dolmuş ilanlar listesi
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false,
+   *   "data": {
+   *     "items": [
+   *       {
+   *         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *         "title": "string",
+   *         "price": 0,
+   *         "isNew": true,
+   *         "isSelected": true,
+   *         "isFeatured": true,
+   *         "locationCityName": "string",
+   *         "mainImageUrl": "string",
+   *         "updatedAt": "2025-04-18T19:42:21.284Z"
+   *       }
+   *     ],
+   *     "pageNumber": 0,
+   *     "pageSize": 0,
+   *     "totalCount": 0,
+   *     "totalPages": 0
+   *   }
+   * }
+   */
+  getExpiredAds: async (params = {}) => {
     try {
-      logInfo('getPendingAds.request', {});
-      const response = await api.post('/Profile/GetPendingAds');
-      logInfo('getPendingAds.response', { 
-        totalCount: response.data.totalCount, 
-        itemsCount: response.data.items?.length || 0 
-      });
+      const response = await axios.get(`${PROFILE_URL}/GetExpiredAds`, { params });
       return response.data;
     } catch (error) {
-      logError('getPendingAds', error);
-      throw new Error('Bekleyen ilanlar alınamadı: ' + (error.response?.data?.message || error.message));
+      console.error('Süresi dolmuş ilanlar alınırken hata:', error);
+      throw error;
     }
   },
-  
-  getExpiredAds: async () => {
+
+  /**
+   * Kullanıcının reddedilmiş ilanlarını getirir
+   * @param {Object} params - Sayfalama parametreleri
+   * @returns {Promise<Object>} Reddedilmiş ilanlar listesi
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false,
+   *   "data": {
+   *     "items": [
+   *       {
+   *         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *         "title": "string",
+   *         "price": 0,
+   *         "isNew": true,
+   *         "isSelected": true,
+   *         "isFeatured": true,
+   *         "locationCityName": "string",
+   *         "mainImageUrl": "string",
+   *         "updatedAt": "2025-04-18T19:42:37.288Z"
+   *       }
+   *     ],
+   *     "pageNumber": 0,
+   *     "pageSize": 0,
+   *     "totalCount": 0,
+   *     "totalPages": 0
+   *   }
+   * }
+   */
+  getRejectedAds: async (params = {}) => {
     try {
-      logInfo('getExpiredAds.request', {});
-      const response = await api.post('/Profile/GetExpiredAds');
-      logInfo('getExpiredAds.response', { 
-        totalCount: response.data.totalCount, 
-        itemsCount: response.data.items?.length || 0 
-      });
+      const response = await axios.get(`${PROFILE_URL}/GetRejectedAds`, { params });
       return response.data;
     } catch (error) {
-      logError('getExpiredAds', error);
-      throw new Error('Süresi dolmuş ilanlar alınamadı: ' + (error.response?.data?.message || error.message));
+      console.error('Reddedilmiş ilanlar alınırken hata:', error);
+      throw error;
     }
   },
-  
-  getRejectedAds: async () => {
+
+  /**
+   * Kullanıcının öne çıkarılmış ilanlarını getirir
+   * @param {Object} params - Sayfalama parametreleri
+   * @returns {Promise<Object>} Öne çıkarılmış ilanlar listesi
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false,
+   *   "data": {
+   *     "items": [
+   *       {
+   *         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *         "title": "string",
+   *         "price": 0,
+   *         "isNew": true,
+   *         "isSelected": true,
+   *         "isFeatured": true,
+   *         "locationCityName": "string",
+   *         "mainImageUrl": "string",
+   *         "updatedAt": "2025-04-18T19:43:42.621Z"
+   *       }
+   *     ],
+   *     "pageNumber": 0,
+   *     "pageSize": 0,
+   *     "totalCount": 0,
+   *     "totalPages": 0
+   *   }
+   * }
+   */
+  getSelectedAds: async (params = {}) => {
     try {
-      logInfo('getRejectedAds.request', {});
-      const response = await api.post('/Profile/GetRejectedAds');
-      logInfo('getRejectedAds.response', { 
-        totalCount: response.data.totalCount, 
-        itemsCount: response.data.items?.length || 0 
-      });
+      const response = await axios.get(`${PROFILE_URL}/GetSelectedAds`, { params });
       return response.data;
     } catch (error) {
-      logError('getRejectedAds', error);
-      throw new Error('Reddedilen ilanlar alınamadı: ' + (error.response?.data?.message || error.message));
-    }
-  },
-  
-  getSelectedAds: async () => {
-    try {
-      logInfo('getSelectedAds.request', {});
-      const response = await api.post('/Profile/GetSelectedAds');
-      logInfo('getSelectedAds.response', { 
-        totalCount: response.data.totalCount, 
-        itemsCount: response.data.items?.length || 0 
-      });
-      return response.data;
-    } catch (error) {
-      logError('getSelectedAds', error);
-      throw new Error('Favori ilanlar alınamadı: ' + (error.response?.data?.message || error.message));
+      console.error('Öne çıkarılmış ilanlar alınırken hata:', error);
+      throw error;
     }
   }
 };

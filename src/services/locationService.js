@@ -1,96 +1,123 @@
-import api from './api';
+import axios from 'axios';
+import { API_URL } from '../config';
 
-const logError = (methodName, error) => {
-  console.error(`[LocationService] ${methodName} hatası:`, {
-    message: error.message,
-    status: error.response?.status,
-    data: error.response?.data,
-    stack: error.stack
-  });
-};
-
-const logInfo = (methodName, data) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.info(`[LocationService] ${methodName}:`, data);
-  }
-};
+const LOCATIONS_URL = `${API_URL}/Locations`;
 
 const locationService = {
-  getAllLocations: async (params = {}) => {
+  /**
+   * Tüm lokasyonları getirir
+   * @param {Object} params - Sayfalama parametreleri
+   * @returns {Promise<Object>} Lokasyon listesi sonucu
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   isSucceeded: true,
+   *   message: "string",
+   *   isFailed: false,
+   *   data: {
+   *     items: [ ... lokasyon nesneleri ... ],
+   *     pageNumber: 0,
+   *     pageSize: 0,
+   *     totalCount: 0,
+   *     totalPages: 0
+   *   }
+   * }
+   */
+  getAll: async (params = {}) => {
     try {
-      const queryParams = new URLSearchParams({
-        PageNumber: params.pageNumber || 1,
-        PageSize: params.pageSize || 200,
-        SortBy: params.sortBy || '',
-        IsDescending: params.isDescending || false
-      }).toString();
-      
-      logInfo('getAllLocations.request', { params });
-      const response = await api.get(`/Locations/GetAll?${queryParams}`);
-      logInfo('getAllLocations.response', response.data);
+      const response = await axios.get(`${LOCATIONS_URL}/GetAll`, { params });
       return response.data;
     } catch (error) {
-      logError('getAllLocations', error);
-      throw new Error('Lokasyonlar alınırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error("Lokasyonlar alınırken hata:", error);
+      throw error;
     }
   },
-  
-  getLocationById: async (id) => {
-    try {
-      logInfo('getLocationById.request', { id });
-      const response = await api.get(`/Locations/GetById?Id=${id}`);
-      logInfo('getLocationById.response', response.data);
-      return response.data;
-    } catch (error) {
-      logError('getLocationById', error);
-      throw new Error('Lokasyon detayları alınırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
-    }
-  },
-  
-  createLocation: async (locationData) => {
-    try {
-      const requestData = {
-        city: locationData.city,
-        country: locationData.country
-      };
 
-      logInfo('createLocation.request', requestData);
-      const response = await api.post('/Locations/Create', requestData);
-      logInfo('createLocation.response', response.data);
+  /**
+   * Lokasyon detayını ID'ye göre getirir
+   * @param {string} id - Lokasyon ID'si
+   * @returns {Promise<Object>} Lokasyon detayı sonucu
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   isSucceeded: true,
+   *   message: "string",
+   *   isFailed: false,
+   *   data: {
+   *     item: {
+   *       id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+   *       createdAt: "2025-04-18T18:50:17.335Z",
+   *       updatedAt: "2025-04-18T18:50:17.335Z",
+   *       city: "string",
+   *       country: "string"
+   *     }
+   *   }
+   * }
+   */
+  getById: async (id) => {
+    try {
+      const response = await axios.get(`${LOCATIONS_URL}/GetById`, { 
+        params: { Id: id } 
+      });
       return response.data;
     } catch (error) {
-      logError('createLocation', error);
-      throw new Error('Lokasyon oluşturulurken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error("Lokasyon detayı alınırken hata:", error);
+      throw error;
     }
   },
-  
-  updateLocation: async (locationData) => {
-    try {
-      const requestData = {
-        id: locationData.id,
-        city: locationData.city,
-        country: locationData.country
-      };
 
-      logInfo('updateLocation.request', requestData);
-      const response = await api.post('/Locations/Update', requestData);
-      logInfo('updateLocation.response', response.data);
+  /**
+   * Yeni lokasyon oluşturur
+   * @param {Object} locationData - Lokasyon verileri {city, country}
+   * @returns {Promise<Object>} Oluşturma sonucu
+   * @example
+   * // İstek veri formatı
+   * {
+   *   city: "string",
+   *   country: "string"
+   * }
+   * 
+   * // Dönen veri formatı
+   * {
+   *   isSucceeded: true,
+   *   message: "string",
+   *   isFailed: false
+   * }
+   */
+  create: async (locationData) => {
+    try {
+      const response = await axios.post(`${LOCATIONS_URL}/Create`, locationData);
       return response.data;
     } catch (error) {
-      logError('updateLocation', error);
-      throw new Error('Lokasyon güncellenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error("Lokasyon oluşturulurken hata:", error);
+      throw error;
     }
   },
-  
-  deleteLocation: async (id) => {
+
+  /**
+   * Lokasyon siler
+   * @param {string} id - Silinecek lokasyon ID'si
+   * @returns {Promise<Object>} Silme sonucu
+   * @example
+   * // İstek veri formatı
+   * {
+   *   id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+   * }
+   * 
+   * // Dönen veri formatı
+   * {
+   *   isSucceeded: true,
+   *   message: "string",
+   *   isFailed: false
+   * }
+   */
+  delete: async (id) => {
     try {
-      logInfo('deleteLocation.request', { id });
-      const response = await api.post('/Locations/Delete', { id });
-      logInfo('deleteLocation.response', response.data);
+      const response = await axios.post(`${LOCATIONS_URL}/Delete`, { id });
       return response.data;
     } catch (error) {
-      logError('deleteLocation', error);
-      throw new Error('Lokasyon silinirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error("Lokasyon silinirken hata:", error);
+      throw error;
     }
   }
 };

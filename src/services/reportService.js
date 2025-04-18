@@ -1,120 +1,121 @@
-import api from './api';
+import axios from 'axios';
+import { API_URL } from '../config';
 
-const logError = (methodName, error) => {
-  console.error(`[ReportService] ${methodName} hatası:`, {
-    message: error.message,
-    status: error.response?.status,
-    data: error.response?.data,
-    stack: error.stack
-  });
-};
+const REPORTS_URL = `${API_URL}/reports`;
 
-const logInfo = (methodName, data) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.info(`[ReportService] ${methodName}:`, data);
-  }
-};
-
-// Report Reason enum values (must match backend)
-export const REPORT_REASON = {
-  OFFENSIVE: 0,
-  FAKE: 1,
-  SPAM: 2,
-  INAPPROPRIATE: 3,
-  SCAM: 4,
-  DUPLICATE: 5,
-  OTHER: 6
-};
-
-// Report Status enum values (must match backend)
-export const REPORT_STATUS = {
-  PENDING: 0,
-  UNDER_REVIEW: 1,
-  RESOLVED: 2,
-  REJECTED: 3
-};
-
+/**
+ * Rapor servisi - İlan raporlama işlemleri için API istekleri
+ */
 const reportService = {
-  // Kullanıcı bir ilanı raporlar
+  /**
+   * Bir ilanı rapor et
+   * @param {Object} reportData - Rapor verisi
+   * @param {string} reportData.adId - Rapor edilen ilanın ID'si
+   * @param {string} reportData.reason - Rapor nedeni (INAPPROPRIATE_CONTENT, FAKE_AD, SPAM, WRONG_CATEGORY, SCAM, OTHER)
+   * @param {string} reportData.description - Rapor açıklaması
+   * @returns {Promise} - API yanıtı
+   */
   createReport: async (reportData) => {
     try {
-      const requestData = {
-        adId: reportData.adId,
-        appUserId: "00000000-0000-0000-0000-000000000000", // Kullanıcı ID'si kullanılmıyor
-        reason: reportData.reason,
-        description: reportData.description
-      };
-
-      logInfo('createReport.request', requestData);
-      const response = await api.post('/Reports/CreateReport', requestData);
-      logInfo('createReport.response', response.data);
+      const response = await axios.post(`${REPORTS_URL}/CreateReport`, reportData);
       return response.data;
     } catch (error) {
-      logError('createReport', error);
-      throw new Error('Rapor gönderilirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('İlan raporlanırken hata:', error);
+      throw error;
     }
   },
 
-  // Admin tüm raporları listeler (status parametresi opsiyonel)
+  /**
+   * Tüm raporları getir (admin için)
+   * @param {string} status - Filtrelenecek durum (opsiyonel)
+   * @returns {Promise} - API yanıtı
+   */
   getAllReports: async (status = null) => {
     try {
-      const url = status !== null 
-        ? `/Reports/GetAllReports?status=${status}`
-        : '/Reports/GetAllReports';
-        
-      logInfo('getAllReports.request', { status });
-      const response = await api.get(url);
-      logInfo('getAllReports.response', response.data);
+      let params = {};
+      if (status) {
+        params.status = status;
+      }
+      
+      const response = await axios.get(`${REPORTS_URL}/GetAllReports`, { params });
       return response.data;
     } catch (error) {
-      logError('getAllReports', error);
-      throw new Error('Raporlar listelenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('Raporlar getirilirken hata:', error);
+      throw error;
     }
   },
 
-  // Admin bir raporun detaylarını görüntüler
-  getReportById: async (id) => {
+  /**
+   * Bir raporu ID'sine göre getir
+   * @param {string} reportId - Rapor ID'si
+   * @returns {Promise} - API yanıtı
+   */
+  getReportById: async (reportId) => {
     try {
-      logInfo('getReportById.request', { id });
-      const response = await api.get(`/Reports/GetReportById/${id}`);
-      logInfo('getReportById.response', response.data);
+      const response = await axios.get(`${REPORTS_URL}/GetReportById/${reportId}`);
       return response.data;
     } catch (error) {
-      logError('getReportById', error);
-      throw new Error('Rapor detayları alınırken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error(`${reportId} ID'li rapor getirilirken hata:`, error);
+      throw error;
     }
   },
 
-  // Admin bir ilana ait tüm raporları listeler
+  /**
+   * Bir ilanın raporlarını getir
+   * @param {string} adId - İlan ID'si
+   * @returns {Promise} - API yanıtı
+   */
   getReportsByAdId: async (adId) => {
     try {
-      logInfo('getReportsByAdId.request', { adId });
-      const response = await api.get(`/Reports/GetReportsByAdId/${adId}`);
-      logInfo('getReportsByAdId.response', response.data);
+      const response = await axios.get(`${REPORTS_URL}/GetReportsByAdId/${adId}`);
       return response.data;
     } catch (error) {
-      logError('getReportsByAdId', error);
-      throw new Error('İlana ait raporlar listelenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error(`${adId} ID'li ilanın raporları getirilirken hata:`, error);
+      throw error;
     }
   },
 
-  // Admin bir raporun durumunu günceller
+  /**
+   * Rapor durumunu güncelle
+   * @param {Object} reportData - Rapor güncellemesi için gerekli veriler
+   * @returns {Promise} - API yanıtı
+   */
   updateReportStatus: async (reportData) => {
     try {
-      const requestData = {
-        reportId: reportData.reportId,
-        appUserId: "00000000-0000-0000-0000-000000000000", // Kullanıcı ID'si kullanılmıyor
-        status: reportData.status,
-        reviewNotes: reportData.reviewNotes
-      };
-
-      logInfo('updateReportStatus.request', requestData);
-      const response = await api.post('/Reports/UpdateReportStatus', requestData);
-      logInfo('updateReportStatus.response', response.data);
+      const response = await axios.post(`${REPORTS_URL}/UpdateReportStatus`, reportData);
       return response.data;
     } catch (error) {
-      logError('updateReportStatus', error);
-      throw new Error('Rapor durumu güncellenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error(`Rapor durumu güncellenirken hata:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Bir raporu sil (Admin için)
+   * @param {string} reportId - Silinecek raporun ID'si
+   * @returns {Promise} - API yanıtı
+   */
+  deleteReport: async (reportId) => {
+    try {
+      const response = await axios.delete(`${REPORTS_URL}/${reportId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`${reportId} ID'li rapor silinirken hata:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Rapor istatistiklerini getir (Admin için)
+   * @returns {Promise} - API yanıtı
+   */
+  getReportStats: async () => {
+    try {
+      const response = await axios.get(`${REPORTS_URL}/GetReportStats`);
+      return response.data;
+    } catch (error) {
+      console.error('Rapor istatistikleri getirilirken hata:', error);
+      throw error;
     }
   }
 };
