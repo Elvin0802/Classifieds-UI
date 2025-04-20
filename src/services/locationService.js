@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const LOCATIONS_URL = `${API_URL}/Locations`;
@@ -25,7 +25,7 @@ const locationService = {
    */
   getAll: async (params = {}) => {
     try {
-      const response = await axios.get(`${LOCATIONS_URL}/GetAll`, { params });
+      const response = await apiClient.get(`${LOCATIONS_URL}/GetAll`, { params });
       return response.data;
     } catch (error) {
       console.error("Lokasyonlar alınırken hata:", error);
@@ -56,7 +56,7 @@ const locationService = {
    */
   getById: async (id) => {
     try {
-      const response = await axios.get(`${LOCATIONS_URL}/GetById`, { 
+      const response = await apiClient.get(`${LOCATIONS_URL}/GetById`, { 
         params: { Id: id } 
       });
       return response.data;
@@ -86,7 +86,7 @@ const locationService = {
    */
   create: async (locationData) => {
     try {
-      const response = await axios.post(`${LOCATIONS_URL}/Create`, locationData);
+      const response = await apiClient.post(`${LOCATIONS_URL}/Create`, locationData);
       return response.data;
     } catch (error) {
       console.error("Lokasyon oluşturulurken hata:", error);
@@ -113,7 +113,7 @@ const locationService = {
    */
   delete: async (id) => {
     try {
-      const response = await axios.post(`${LOCATIONS_URL}/Delete`, { id });
+      const response = await apiClient.post(`${LOCATIONS_URL}/Delete`, { id });
       return response.data;
     } catch (error) {
       console.error("Lokasyon silinirken hata:", error);

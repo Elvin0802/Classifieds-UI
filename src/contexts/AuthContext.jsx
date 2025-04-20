@@ -16,33 +16,130 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Uygulama başladığında kimlik doğrulama verilerini yükle
+  // Token decode fonksiyonu
+  const decodeToken = (token) => {
+    try {
+      const decoded = jwtDecode(token);
+      const isUserAdmin = decoded.role && (Array.isArray(decoded.role) 
+        ? decoded.role.includes('Admin') 
+        : decoded.role === 'Admin');
+      
+      const userIdFromToken = decoded.sub || decoded.userId || decoded.nameid;
+      
+      console.log('Token decode edildi:', { 
+        isUserAdmin, 
+        userIdFromToken,
+        role: decoded.role
+      });
+      
+      return { isUserAdmin, userIdFromToken };
+    } catch (error) {
+      console.error('Token decode hatası:', error);
+      return { isUserAdmin: false, userIdFromToken: null };
+    }
+  };
+
+  // Kimlik doğrulama durumunu kontrol et
   useEffect(() => {
-    const initializeAuth = async () => {
+    const checkAuth = async () => {
+      setLoading(true);
+      
       try {
-        // localStorage'dan kimlik doğrulama verilerini yükle
-        authStorage.initializeAuthData();
+        // Token kontrolü yap
+        const token = localStorage.getItem('accessToken');
         
-        // Oturum durumunu kontrol et
-        const isLoggedIn = authStorage.getIsLogin();
-        setIsAuthenticated(isLoggedIn);
-        
-        if (isLoggedIn) {
-          // Admin durumu ve kullanıcı ID'sini al
-          setIsAdmin(authStorage.getIsAdmin());
-          setUserId(authStorage.getUserId());
+        if (token) {
+          console.log('localStorage\'da token bulundu, kullanıcı doğrulanıyor');
           
-          // Kullanıcı verilerini getir
-          await fetchUserData();
+          // Token'dan bilgileri çıkar
+          const { isUserAdmin, userIdFromToken } = decodeToken(token);
+          
+          // Auth state'i güncelle
+          setIsAuthenticated(true);
+          setIsAdmin(isUserAdmin);
+          setUserId(userIdFromToken);
+          
+          // LocalStorage'ı güncelle
+          authStorage.setIsLogin(true);
+          authStorage.setIsAdmin(isUserAdmin);
+          if (userIdFromToken) authStorage.setUserId(userIdFromToken);
+          
+          console.log('Token bilgileri güncellendi:', { isUserAdmin, userIdFromToken });
+          
+          // API'den kullanıcı bilgilerini getir
+          try {
+            const profileResponse = await profileService.getUserData();
+            
+            if (profileResponse && profileResponse.isSucceeded && profileResponse.data?.item) {
+              const userData = profileResponse.data.item;
+              
+              // Kullanıcı verilerini güncelle
+              setUser(userData);
+              setUserId(userData.id);
+              setIsAdmin(userData.isAdmin);
+              
+              // LocalStorage'ı güncelle
+              authStorage.setIsAdmin(userData.isAdmin);
+              authStorage.setUserId(userData.id);
+              
+              console.log('API\'den kullanıcı bilgileri alındı:', userData.name, userData.isAdmin);
+            }
+          } catch (profileError) {
+            console.error('Profil bilgisi alınırken hata:', profileError);
+            // Hata durumunda token bilgilerini kullan, logout yapma
+          }
+        } else {
+          console.log('Token bulunamadı, autoLogin kontrol ediliyor');
+          
+          // Token yoksa veya geçersizse otomatik giriş dene
+          const isLoggedIn = await authService.autoLogin();
+          
+          if (isLoggedIn) {
+            console.log('AutoLogin başarılı, yeni token alındı');
+            const newToken = localStorage.getItem('accessToken');
+            
+            if (newToken) {
+              const { isUserAdmin, userIdFromToken } = decodeToken(newToken);
+              
+              // Auth state'i güncelle
+              setIsAuthenticated(true);
+              setIsAdmin(isUserAdmin);
+              setUserId(userIdFromToken);
+              
+              // LocalStorage'ı güncelle
+              authStorage.setIsLogin(true);
+              authStorage.setIsAdmin(isUserAdmin);
+              if (userIdFromToken) authStorage.setUserId(userIdFromToken);
+              
+              // API'den kullanıcı bilgilerini getir
+              try {
+                const profileResponse = await profileService.getUserData();
+                
+                if (profileResponse && profileResponse.isSucceeded && profileResponse.data?.item) {
+                  setUser(profileResponse.data.item);
+                }
+              } catch (profileError) {
+                console.error('AutoLogin sonrası profil bilgisi alınamadı:', profileError);
+              }
+            }
+          } else {
+            console.log('AutoLogin başarısız, kullanıcı çıkış yaptı');
+            // AutoLogin başarısız, çıkış yap
+            setIsAuthenticated(false);
+            setIsAdmin(false);
+            setUserId(null);
+            setUser(null);
+            authStorage.clear();
+          }
         }
       } catch (error) {
-        console.error('Kimlik doğrulama başlatılırken hata:', error);
+        console.error('Kimlik doğrulama kontrolü sırasında hata:', error);
       } finally {
         setLoading(false);
       }
     };
-    
-    initializeAuth();
+
+    checkAuth();
   }, []);
 
   // Kullanıcı verilerini getir
@@ -69,19 +166,68 @@ export const AuthProvider = ({ children }) => {
   // Giriş yap
   const login = async (credentials) => {
     try {
-      // Login işlemi authService tarafından yapılmış olmalı
-      // Token ve yanıt axiosConfig tarafından işlenmiş olacak
-      // Oturum durumunu güncelle
-      authStorage.setIsLogin(true);
-      setIsAuthenticated(true);
+      // API'ye login isteği gönder
+      const response = await authService.login(credentials);
       
-      // Kullanıcı verilerini getir
-      await fetchUserData();
-      
-      return true;
+      // Eğer başarılı bir yanıt ve token varsa
+      if (response && response.token) {
+        // AuthContext durumunu güncelle
+        setIsAuthenticated(true);
+        
+        // Token'dan bilgileri çıkar
+        const { isUserAdmin, userIdFromToken } = decodeToken(response.token);
+        setIsAdmin(isUserAdmin);
+        setUserId(userIdFromToken);
+        
+        // API'den profil bilgilerini getir
+        try {
+          const profileResponse = await profileService.getUserData();
+          
+          // Profil bilgileri başarıyla alındıysa
+          if (profileResponse && profileResponse.isSucceeded && profileResponse.data?.item) {
+            const userData = profileResponse.data.item;
+            
+            // Kullanıcı verilerini state'e ayarla
+            setUser(userData);
+            setUserId(userData.id);
+            
+            // isAdmin değerini API'den gelen veri ile ayarla
+            setIsAdmin(userData.isAdmin);
+            
+            // LocalStorage'a değerleri kaydet
+            authStorage.setIsLogin(true);
+            authStorage.setIsAdmin(userData.isAdmin);
+            authStorage.setUserId(userData.id);
+            
+            console.log('Kullanıcı girişi başarılı:', userData.name);
+            console.log('Admin durumu:', userData.isAdmin ? 'Evet' : 'Hayır');
+          } else {
+            console.error('Profil bilgileri alınamadı');
+            
+            // Profil bilgisi alınamazsa token bilgilerini kullan
+            authStorage.setIsLogin(true);
+            authStorage.setIsAdmin(isUserAdmin);
+            authStorage.setUserId(userIdFromToken);
+          }
+        } catch (profileError) {
+          console.error('Profil bilgileri alınırken hata:', profileError);
+          
+          // Profil bilgisi alınamazsa token bilgilerini kullan
+          authStorage.setIsLogin(true);
+          authStorage.setIsAdmin(isUserAdmin);
+          authStorage.setUserId(userIdFromToken);
+        }
+        
+        return { success: true };
+      } else {
+        return { success: false, message: 'Giriş başarısız.' };
+      }
     } catch (error) {
-      console.error('Context güncelleme hatası:', error);
-      return false;
+      console.error('Giriş sırasında hata:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Giriş işlemi sırasında bir hata oluştu.' 
+      };
     }
   };
 
@@ -89,19 +235,22 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authService.logout();
-    } catch (error) {
-      console.error('Çıkış yapılırken hata:', error);
-    } finally {
-      // localStorage'dan kimlik doğrulama verilerini temizle
-      authStorage.clear();
-      
-      // State'i güncelle
       setIsAuthenticated(false);
-      setUserId(null);
       setIsAdmin(false);
       setUser(null);
-      
-      toast.info('Çıkış yaptınız');
+      setUserId(null);
+      return { success: true };
+    } catch (error) {
+      console.error('Çıkış sırasında hata:', error);
+      // Hata olsa bile stateler temizlenir
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      setUser(null);
+      setUserId(null);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Çıkış işlemi sırasında bir hata oluştu.' 
+      };
     }
   };
 

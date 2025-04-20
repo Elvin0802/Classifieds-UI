@@ -13,7 +13,7 @@ function AdminLocations() {
   const fetchLocations = async () => {
     setLoading(true);
     try {
-      const response = await locationService.getAllLocations();
+      const response = await locationService.getAll();
       setLocations(response.data.items || []);
     } catch (error) {
       console.error('Lokasyonlar alınırken hata:', error);
@@ -31,7 +31,7 @@ function AdminLocations() {
   const handleDeleteLocation = async (locationId) => {
     if (window.confirm('Bu lokasyonu silmek istediğinizden emin misiniz?')) {
       try {
-        await locationService.deleteLocation(locationId);
+        await locationService.delete(locationId);
         toast.success('Lokasyon başarıyla silindi.');
         fetchLocations(); // Tabloyu yenile
       } catch (error) {
@@ -49,9 +49,8 @@ function AdminLocations() {
     
     const searchLower = searchTerm.toLowerCase();
     return locations.filter(location => 
-      location.name.toLowerCase().includes(searchLower) || 
-      (location.description && location.description.toLowerCase().includes(searchLower)) ||
-      (location.code && location.code.toLowerCase().includes(searchLower))
+      (location.city && location.city.toLowerCase().includes(searchLower)) || 
+      (location.country && location.country.toLowerCase().includes(searchLower))
     );
   };
   
@@ -106,10 +105,9 @@ function AdminLocations() {
                 <thead>
                   <tr>
                     <th className="w-16"></th>
-                    <th>Lokasyon Adı</th>
-                    <th>Kod</th>
-                    <th>Açıklama</th>
-                    <th>Üst Lokasyon</th>
+                    <th>Şehir</th>
+                    <th>Ülke</th>
+                    <th>Oluşturma Tarihi</th>
                     <th className="w-24">İşlemler</th>
                   </tr>
                 </thead>
@@ -119,10 +117,9 @@ function AdminLocations() {
                       <td>
                         <FaMapMarkerAlt className="text-blue-500" size={20} />
                       </td>
-                      <td className="font-medium">{location.name}</td>
-                      <td>{location.code || '-'}</td>
-                      <td className="max-w-xs truncate">{location.description || '-'}</td>
-                      <td>{location.parentName || '-'}</td>
+                      <td className="font-medium">{location.city}</td>
+                      <td>{location.country}</td>
+                      <td>{new Date(location.createdAt).toLocaleDateString('tr-TR')}</td>
                       <td>
                         <div className="flex space-x-2">
                           <Link 

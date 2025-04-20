@@ -1,4 +1,4 @@
-import { FaList, FaMapMarkerAlt, FaUsers, FaAd, FaChartLine } from 'react-icons/fa';
+import { FaList, FaMapMarkerAlt, FaFlag, FaChartLine } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 function AdminDashboard() {
@@ -19,24 +19,10 @@ function AdminDashboard() {
       color: 'bg-blue-100'
     },
     {
-      title: 'İlanlar',
-      icon: <FaAd size={24} className="text-green-500" />,
-      link: '/admin/ads',
-      description: 'İlan onaylama ve düzenleme',
-      color: 'bg-green-100'
-    },
-    {
-      title: 'Kullanıcılar',
-      icon: <FaUsers size={24} className="text-purple-500" />,
-      link: '/admin/users',
-      description: 'Kullanıcı yönetimi ve ayarları',
-      color: 'bg-purple-100'
-    },
-    {
-      title: 'İstatistikler',
-      icon: <FaChartLine size={24} className="text-red-500" />,
-      link: '/admin/stats',
-      description: 'Sistem performans istatistikleri',
+      title: 'Raporlar',
+      icon: <FaFlag size={24} className="text-red-500" />,
+      link: '/admin/reports',
+      description: 'Kullanıcı raporlarını yönet',
       color: 'bg-red-100'
     }
   ];
@@ -64,11 +50,10 @@ function AdminDashboard() {
       
       <div className="mt-10 bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-bold mb-4">Hızlı İşlemler</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/admin/categories/create" className="btn btn-primary">Yeni Kategori</Link>
           <Link to="/admin/locations/create" className="btn btn-info">Yeni Lokasyon</Link>
-          <Link to="/admin/ads/pending" className="btn btn-warning">Onay Bekleyen İlanlar</Link>
-          <Link to="/admin/users" className="btn btn-accent">Kullanıcı Listesi</Link>
+          <Link to="/admin/reports" className="btn btn-accent">Raporlar</Link>
         </div>
       </div>
     </div>

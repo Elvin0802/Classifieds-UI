@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const logError = (source, error) => {
   console.error(`[API] ${source}:`, {
@@ -14,9 +15,6 @@ const logInfo = (source, data) => {
     console.info(`[API] ${source}:`, data);
   }
 };
-
-// API temel URL'i
-const API_URL = 'http://localhost:5097/api';
 
 // Axios instance oluşturma
 const apiClient = axios.create({
@@ -70,29 +68,28 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Token süresi dolmuşsa ve henüz retry yapılmamışsa
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Eğer 401 hatası alındıysa ve bu request daha önce yenilenmemişse
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
         logInfo('TokenRefresh', 'Token yenileme başladı');
         
-        // Refresh token ile yeni token alalım
-        const response = await axios.post(
-          `${API_URL}/Auth/RefreshTokenLogin`, 
-          {}, 
-          {
-            withCredentials: true // Cookie'leri göndermek için
-          }
-        );
+        // Refresh token ile yeni token al
+        const refreshResponse = await axios.post(`${API_URL}/Auth/RefreshTokenLogin`, {}, {
+          withCredentials: true // Cookie'leri göndermek için gerekli
+        });
         
         // Yeni token'ı localStorage'a kaydet
-        if (response.data?.token) {
-          localStorage.setItem('accessToken', response.data.token);
+        if (refreshResponse.data && refreshResponse.data.token) {
+          localStorage.setItem('accessToken', refreshResponse.data.token);
           logInfo('TokenRefresh', 'Token başarıyla yenilendi');
           
-          // Orijinal isteği yeni token ile tekrarla
-          originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+          // Oturum durumunu koru - LocalStorage'da giriş ve admin durumunu ayarla
+          localStorage.setItem('isLogin', 'true');
+          
+          // Orijinal isteği yeni token ile tekrar gönder
+          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
           return apiClient(originalRequest);
         } else {
           throw new Error('Token yanıtı geçersiz format');
@@ -100,16 +97,9 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         logError('TokenRefresh', refreshError);
         
-        // Refresh token da geçersizse localStorage'ı temizle
-        localStorage.removeItem('accessToken');
-        localStorage.setItem('isLogin', 'false');
-        localStorage.setItem('isAdmin', 'false');
-        localStorage.removeItem('userId');
-        
-        // Kullanıcıyı login sayfasına yönlendir
-        if (window.location.pathname !== '/login' && window.location.pathname !== '/giris') {
-          window.location.href = '/giris';
-        }
+        // Token yenilemesi başarısız olsa bile kullanıcıyı giriş sayfasına yönlendirme
+        // AuthContext'in kendi kontrolünü yapmasına izin ver
+        console.log('Token yenilemesi başarısız oldu, ancak oturum durumu korunuyor');
         
         return Promise.reject(refreshError);
       }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { FaHome, FaList, FaMapMarkerAlt, FaUsers, FaAd, FaTachometerAlt, FaBars, FaTimes } from 'react-icons/fa';
+import { FaHome, FaList, FaMapMarkerAlt, FaFlag, FaTachometerAlt, FaBars, FaTimes } from 'react-icons/fa';
 
 function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -67,20 +67,11 @@ function AdminLayout() {
             </li>
             <li>
               <Link 
-                to="/admin/ads" 
-                className={`flex items-center p-4 ${isActive('/admin/ads') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
+                to="/admin/reports" 
+                className={`flex items-center p-4 ${isActive('/admin/reports') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
               >
-                <FaAd className="mr-4" />
-                {isSidebarOpen && <span>İlanlar</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/admin/users" 
-                className={`flex items-center p-4 ${isActive('/admin/users') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
-              >
-                <FaUsers className="mr-4" />
-                {isSidebarOpen && <span>Kullanıcılar</span>}
+                <FaFlag className="mr-4" />
+                {isSidebarOpen && <span>Raporlar</span>}
               </Link>
             </li>
             <li className="mt-8">

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const PROFILE_URL = `${API_URL}/Profile`;
@@ -28,10 +28,18 @@ const profileService = {
    */
   getUserData: async () => {
     try {
-      const response = await axios.post(`${PROFILE_URL}/GetUserData`);
+      const response = await apiClient.post(`${PROFILE_URL}/GetUserData`);
+      console.log('getUserData API yanıtı:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Kullanıcı bilgileri alınırken hata:', error);
+      console.error('Kullanıcı verileri alınırken hata:', error);
+      if (error.response) {
+        console.error('API hatası:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('Sunucu yanıt vermedi');
+      } else {
+        console.error('İstek oluşturulurken hata:', error.message);
+      }
       throw error;
     }
   },
@@ -69,7 +77,7 @@ const profileService = {
    */
   getActiveAds: async (params = {}) => {
     try {
-      const response = await axios.get(`${PROFILE_URL}/GetActiveAds`, { params });
+      const response = await apiClient.post(`${PROFILE_URL}/GetActiveAds`, params);
       return response.data;
     } catch (error) {
       console.error('Aktif ilanlar alınırken hata:', error);
@@ -110,7 +118,7 @@ const profileService = {
    */
   getPendingAds: async (params = {}) => {
     try {
-      const response = await axios.get(`${PROFILE_URL}/GetPendingAds`, { params });
+      const response = await apiClient.post(`${PROFILE_URL}/GetPendingAds`, params);
       return response.data;
     } catch (error) {
       console.error('Bekleyen ilanlar alınırken hata:', error);
@@ -151,7 +159,7 @@ const profileService = {
    */
   getExpiredAds: async (params = {}) => {
     try {
-      const response = await axios.get(`${PROFILE_URL}/GetExpiredAds`, { params });
+      const response = await apiClient.post(`${PROFILE_URL}/GetExpiredAds`, params);
       return response.data;
     } catch (error) {
       console.error('Süresi dolmuş ilanlar alınırken hata:', error);
@@ -192,7 +200,7 @@ const profileService = {
    */
   getRejectedAds: async (params = {}) => {
     try {
-      const response = await axios.get(`${PROFILE_URL}/GetRejectedAds`, { params });
+      const response = await apiClient.post(`${PROFILE_URL}/GetRejectedAds`, params);
       return response.data;
     } catch (error) {
       console.error('Reddedilmiş ilanlar alınırken hata:', error);
@@ -233,7 +241,7 @@ const profileService = {
    */
   getSelectedAds: async (params = {}) => {
     try {
-      const response = await axios.get(`${PROFILE_URL}/GetSelectedAds`, { params });
+      const response = await apiClient.post(`${PROFILE_URL}/GetSelectedAds`, params);
       return response.data;
     } catch (error) {
       console.error('Öne çıkarılmış ilanlar alınırken hata:', error);

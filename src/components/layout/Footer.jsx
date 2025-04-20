@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
@@ -5,80 +6,93 @@ function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-800 text-white pt-10 pb-5">
+    <footer className="bg-gray-800 text-white pt-10 pb-4">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Hakkımızda */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Logo ve Hakkında */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Hakkımızda</h3>
-            <p className="text-gray-300 text-sm">
-              İlanlar platformu, kullanıcılarımıza ürün ve hizmetlerini 
-              paylaşma imkanı sunan güvenilir bir ilan sitesidir.
+            <h2 className="text-xl font-bold mb-4">elan.az</h2>
+            <p className="text-gray-300 mb-4">
+              Azərbaycanda özəl elanlar üçün universal meydança
             </p>
           </div>
-
-          {/* Hızlı Linkler */}
+          
+          {/* Linkler */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Hızlı Linkler</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <h3 className="text-lg font-semibold mb-4">Faydalı Linklər</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/" className="hover:text-primary transition-colors">
-                  Ana Sayfa
+                <Link to="/" className="text-gray-300 hover:text-white">
+                  Ana Səhifə
                 </Link>
               </li>
               <li>
-                <Link to="/ilanlar" className="hover:text-primary transition-colors">
-                  İlanlar
+                <Link to="/ads" className="text-gray-300 hover:text-white">
+                  Elanlar
                 </Link>
               </li>
               <li>
-                <Link to="/kategoriler" className="hover:text-primary transition-colors">
-                  Kategoriler
+                <Link to="/about" className="text-gray-300 hover:text-white">
+                  Haqqımızda
                 </Link>
               </li>
               <li>
-                <Link to="/ilan-ekle" className="hover:text-primary transition-colors">
-                  İlan Ekle
+                <Link to="/help" className="text-gray-300 hover:text-white">
+                  Kömək
                 </Link>
               </li>
             </ul>
           </div>
-
+          
+          {/* Yasal ve Koşullar */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Hüquqi</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/privacy" className="text-gray-300 hover:text-white">
+                  Məxfilik Siyasəti
+                </Link>
+              </li>
+              <li>
+                <Link to="#" className="text-gray-300 hover:text-white">
+                  İstifadəçi Razılaşması
+                </Link>
+              </li>
+              <li>
+                <Link to="#" className="text-gray-300 hover:text-white">
+                  Qaydalar
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
           {/* İletişim */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">İletişim</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li>Email: info@ilanlar.com</li>
-              <li>Telefon: +90 212 123 45 67</li>
-              <li>Adres: İstanbul, Türkiye</li>
-            </ul>
-          </div>
-
-          {/* Sosyal Medya */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Bizi Takip Edin</h3>
+            <h3 className="text-lg font-semibold mb-4">Əlaqə</h3>
+            <p className="text-gray-300 mb-2">info@elan.az</p>
+            <p className="text-gray-300 mb-4">+994 12 345 67 89</p>
+            
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
-                <FaFacebook size={20} />
+              <a href="#" className="text-gray-300 hover:text-white text-xl">
+                <FaFacebook />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
-                <FaTwitter size={20} />
+              <a href="#" className="text-gray-300 hover:text-white text-xl">
+                <FaTwitter />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
-                <FaInstagram size={20} />
+              <a href="#" className="text-gray-300 hover:text-white text-xl">
+                <FaInstagram />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
-                <FaLinkedin size={20} />
+              <a href="#" className="text-gray-300 hover:text-white text-xl">
+                <FaLinkedin />
               </a>
             </div>
           </div>
         </div>
-
-        {/* Telif Hakkı */}
-        <div className="border-t border-gray-700 mt-8 pt-5">
-          <p className="text-center text-sm text-gray-400">
-            &copy; {currentYear} İlanlar. Tüm hakları saklıdır.
-          </p>
+        
+        <hr className="border-gray-700 my-8" />
+        
+        <div className="text-center text-gray-400">
+          <p>&copy; {currentYear} elan.az. Bütün hüquqlar qorunur.</p>
         </div>
       </div>
     </footer>

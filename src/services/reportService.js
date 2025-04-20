@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const REPORTS_URL = `${API_URL}/reports`;
@@ -17,7 +17,7 @@ const reportService = {
    */
   createReport: async (reportData) => {
     try {
-      const response = await axios.post(`${REPORTS_URL}/CreateReport`, reportData);
+      const response = await apiClient.post(`${REPORTS_URL}/CreateReport`, reportData);
       return response.data;
     } catch (error) {
       console.error('İlan raporlanırken hata:', error);
@@ -37,7 +37,7 @@ const reportService = {
         params.status = status;
       }
       
-      const response = await axios.get(`${REPORTS_URL}/GetAllReports`, { params });
+      const response = await apiClient.get(`${REPORTS_URL}/GetAllReports`, { params });
       return response.data;
     } catch (error) {
       console.error('Raporlar getirilirken hata:', error);
@@ -52,7 +52,7 @@ const reportService = {
    */
   getReportById: async (reportId) => {
     try {
-      const response = await axios.get(`${REPORTS_URL}/GetReportById/${reportId}`);
+      const response = await apiClient.get(`${REPORTS_URL}/GetReportById/${reportId}`);
       return response.data;
     } catch (error) {
       console.error(`${reportId} ID'li rapor getirilirken hata:`, error);
@@ -67,7 +67,7 @@ const reportService = {
    */
   getReportsByAdId: async (adId) => {
     try {
-      const response = await axios.get(`${REPORTS_URL}/GetReportsByAdId/${adId}`);
+      const response = await apiClient.get(`${REPORTS_URL}/GetReportsByAdId/${adId}`);
       return response.data;
     } catch (error) {
       console.error(`${adId} ID'li ilanın raporları getirilirken hata:`, error);
@@ -82,7 +82,7 @@ const reportService = {
    */
   updateReportStatus: async (reportData) => {
     try {
-      const response = await axios.post(`${REPORTS_URL}/UpdateReportStatus`, reportData);
+      const response = await apiClient.post(`${REPORTS_URL}/UpdateReportStatus`, reportData);
       return response.data;
     } catch (error) {
       console.error(`Rapor durumu güncellenirken hata:`, error);
@@ -97,7 +97,7 @@ const reportService = {
    */
   deleteReport: async (reportId) => {
     try {
-      const response = await axios.delete(`${REPORTS_URL}/${reportId}`);
+      const response = await apiClient.delete(`${REPORTS_URL}/${reportId}`);
       return response.data;
     } catch (error) {
       console.error(`${reportId} ID'li rapor silinirken hata:`, error);
@@ -111,7 +111,7 @@ const reportService = {
    */
   getReportStats: async () => {
     try {
-      const response = await axios.get(`${REPORTS_URL}/GetReportStats`);
+      const response = await apiClient.get(`${REPORTS_URL}/GetReportStats`);
       return response.data;
     } catch (error) {
       console.error('Rapor istatistikleri getirilirken hata:', error);

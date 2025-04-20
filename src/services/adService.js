@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const ADS_URL = `${API_URL}/Ads`;
@@ -52,7 +52,7 @@ const adService = {
         return acc;
       }, {});
       
-      const response = await axios.post(`${ADS_URL}/GetAll`, cleanParams);
+      const response = await apiClient.post(`${ADS_URL}/GetAll`, cleanParams);
       return response.data;
     } catch (error) {
       console.error('İlanlar alınırken hata:', error);
@@ -67,7 +67,7 @@ const adService = {
    */
   getById: async (adId) => {
     try {
-      const response = await axios.get(`${ADS_URL}/GetById`, {
+      const response = await apiClient.get(`${ADS_URL}/GetById`, {
         params: { Id: adId }
       });
       return response.data;
@@ -101,7 +101,7 @@ const adService = {
    */
   create: async (adData) => {
     try {
-      const response = await axios.post(`${ADS_URL}/Create`, adData);
+      const response = await apiClient.post(`${ADS_URL}/Create`, adData);
       return response.data;
     } catch (error) {
       console.error('İlan oluşturulurken hata:', error);
@@ -124,7 +124,7 @@ const adService = {
    */
   update: async (adData) => {
     try {
-      const response = await axios.post(`${ADS_URL}/Update`, adData);
+      const response = await apiClient.post(`${ADS_URL}/Update`, adData);
       return response.data;
     } catch (error) {
       console.error('İlan güncellenirken hata:', error);
@@ -139,7 +139,7 @@ const adService = {
    */
   delete: async (adId) => {
     try {
-      const response = await axios.get(`${ADS_URL}/Delete`, {
+      const response = await apiClient.get(`${ADS_URL}/Delete`, {
         params: { Id: adId }
       });
       return response.data;
@@ -156,7 +156,7 @@ const adService = {
    */
   selectAd: async (adId) => {
     try {
-      const response = await axios.post(`${ADS_URL}/SelectAd`, {
+      const response = await apiClient.post(`${ADS_URL}/SelectAd`, {
         selectAdId: adId
       });
       return response.data;
@@ -173,7 +173,7 @@ const adService = {
    */
   unselectAd: async (adId) => {
     try {
-      const response = await axios.post(`${ADS_URL}/UnselectAd`, {
+      const response = await apiClient.post(`${ADS_URL}/UnselectAd`, {
         selectAdId: adId
       });
       return response.data;
@@ -189,7 +189,7 @@ const adService = {
    */
   getPricingOptions: async () => {
     try {
-      const response = await axios.get(`${ADS_URL}/GetPricingOptions`);
+      const response = await apiClient.get(`${ADS_URL}/GetPricingOptions`);
       return response.data;
     } catch (error) {
       console.error('Fiyatlandırma seçenekleri alınırken hata:', error);
@@ -205,7 +205,7 @@ const adService = {
    */
   featureAd: async (adId, durationDays) => {
     try {
-      const response = await axios.post(`${ADS_URL}/FeatureAd`, {
+      const response = await apiClient.post(`${ADS_URL}/FeatureAd`, {
         adId,
         durationDays
       });
@@ -224,7 +224,7 @@ const adService = {
    */
   changeAdStatus: async (adId, newAdStatus) => {
     try {
-      const response = await axios.post(`${ADS_URL}/ChangeAdStatus`, {
+      const response = await apiClient.post(`${ADS_URL}/ChangeAdStatus`, {
         adId,
         newAdStatus
       });
@@ -247,7 +247,7 @@ const adService = {
       formData.append('image', imageFile);
       formData.append('adId', adId);
       
-      const response = await axios.post(`${ADS_URL}/UploadImage`, formData, {
+      const response = await apiClient.post(`${ADS_URL}/UploadImage`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

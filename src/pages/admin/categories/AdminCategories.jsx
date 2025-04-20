@@ -65,11 +65,40 @@ function AdminCategories() {
     }
   }, [activeTab]);
   
-  // Kategori silme işlemi (not: Backend'de bu özellik mevcutsa)
+  // Kategori silme işlemi
   const handleDeleteCategory = async (categoryId, categoryType) => {
     if (window.confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
-      // Backend'de silme işlemi API endpoint'i varsa burada kullanılacak
-      toast.info('Silme işlemi şu anda desteklenmiyor.');
+      try {
+        setLoading(true);
+        let response;
+        
+        if (categoryType === 'main') {
+          response = await categoryService.deleteMainCategory(categoryId);
+        } else if (categoryType === 'sub') {
+          response = await categoryService.deleteSubCategory(categoryId);
+        } else {
+          response = await categoryService.deleteCategory(categoryId);
+        }
+        
+        if (response.isSucceeded) {
+          toast.success('Kategori başarıyla silindi.');
+          // Kategori listesini yeniden yükle
+          if (activeTab === 'all') {
+            fetchCategories();
+          } else if (activeTab === 'main') {
+            fetchMainCategories();
+          } else if (activeTab === 'sub') {
+            fetchSubCategories();
+          }
+        } else {
+          toast.error(response.message || 'Kategori silinirken bir hata oluştu.');
+        }
+      } catch (error) {
+        console.error('Kategori silinirken hata:', error);
+        toast.error('Kategori silinirken bir hata oluştu.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
   

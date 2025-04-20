@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const USERS_URL = `${API_URL}/Users`;
@@ -31,7 +31,7 @@ const userService = {
       const payload = {
         createAppUserDto: userData
       };
-      const response = await axios.post(`${USERS_URL}/register`, payload);
+      const response = await apiClient.post(`${USERS_URL}/register`, payload);
       return response.data;
     } catch (error) {
       console.error('Kayıt işlemi sırasında hata:', error);
@@ -61,7 +61,7 @@ const userService = {
    */
   updatePassword: async (passwordData) => {
     try {
-      const response = await axios.post(`${USERS_URL}/update-password`, passwordData);
+      const response = await apiClient.post(`${USERS_URL}/update-password`, passwordData);
       return response.data;
     } catch (error) {
       console.error('Şifre güncelleme sırasında hata:', error);
@@ -91,7 +91,7 @@ const userService = {
    */
   changePassword: async (passwordData) => {
     try {
-      const response = await axios.post(`${USERS_URL}/change-password`, passwordData);
+      const response = await apiClient.post(`${USERS_URL}/change-password`, passwordData);
       return response.data;
     } catch (error) {
       console.error('Şifre değiştirme sırasında hata:', error);

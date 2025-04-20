@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaKey, FaEye, FaEyeSlash } from 'react-icons/fa';
 import authService from '../../services/authService';
@@ -12,14 +12,26 @@ function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
   const [validating, setValidating] = useState(true);
+  const [userEmail, setUserEmail] = useState('');
   
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   
-  // URL'den token ve email parametrelerini al
+  // URL parametrelerinden veya query string'den token ve email/userId bilgilerini al
   const query = new URLSearchParams(location.search);
-  const token = query.get('token');
-  const email = query.get('email');
+  // Query string'den gelen bilgiler
+  const queryToken = query.get('token');
+  const queryEmail = query.get('email');
+  
+  // Path parametrelerinden gelen bilgiler (update-password/:userId/:token)
+  const pathUserId = params.userId;
+  const pathToken = params.token;
+  
+  // Kullanılacak token ve userId/email değerlerini belirle
+  const token = pathToken || queryToken;
+  const userId = pathUserId;
+  const email = queryEmail;
   
   const { 
     register, 
@@ -36,19 +48,41 @@ function ResetPassword() {
   // Token doğrulama işlemi
   useEffect(() => {
     const validateToken = async () => {
-      if (!token || !email) {
+      if (!token) {
         setTokenValid(false);
         setValidating(false);
         return;
       }
       
       try {
-        const data = {
-          resetToken: token,
-          email: email
-        };
+        let data;
+        
+        // URL formatına göre doğrulama yapalım
+        if (userId) {
+          // update-password/:userId/:token formatı için
+          data = {
+            resetToken: token,
+            userId: userId
+          };
+        } else if (email) {
+          // reset-password?token=xxx&email=xxx formatı için
+          data = {
+            resetToken: token,
+            email: email
+          };
+        } else {
+          throw new Error('Email veya userId bilgisi eksik');
+        }
+        
         const response = await authService.confirmResetToken(data);
         setTokenValid(response.isSucceeded);
+        
+        // Email bilgisini kaydet
+        if (response.isSucceeded && response.data && response.data.email) {
+          setUserEmail(response.data.email);
+        } else if (email) {
+          setUserEmail(email);
+        }
         
         if (!response.isSucceeded) {
           toast.error(response.message || 'Geçersiz veya süresi dolmuş bir sıfırlama bağlantısı.');
@@ -63,18 +97,32 @@ function ResetPassword() {
     };
     
     validateToken();
-  }, [token, email]);
+  }, [token, email, userId]);
   
   const onSubmit = async (data) => {
     setIsLoading(true);
     
     try {
-      const passwordData = {
-        resetToken: token,
-        email: email,
-        password: data.password,
-        passwordConfirm: data.confirmPassword
-      };
+      let passwordData;
+      
+      // URL formatına göre istek gönderelim
+      if (userId) {
+        // update-password/:userId/:token formatı için
+        passwordData = {
+          resetToken: token,
+          userId: userId,
+          password: data.password,
+          passwordConfirm: data.confirmPassword
+        };
+      } else {
+        // reset-password?token=xxx&email=xxx formatı için
+        passwordData = {
+          resetToken: token,
+          email: userEmail || email,
+          password: data.password,
+          passwordConfirm: data.confirmPassword
+        };
+      }
       
       const response = await userService.updatePassword(passwordData);
       
@@ -159,7 +207,7 @@ function ResetPassword() {
             </h2>
             
             <p className="text-center text-gray-600 mb-6">
-              {email} hesabınız için yeni bir şifre belirleyin.
+              {userEmail || "Hesabınız"} için yeni bir şifre belirleyin.
             </p>
             
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -183,7 +231,7 @@ function ResetPassword() {
                         message: 'Şifre en az 6 karakter olmalıdır'
                       },
                       pattern: {
-                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/,
+                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/,
                         message: 'Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermelidir'
                       }
                     })}

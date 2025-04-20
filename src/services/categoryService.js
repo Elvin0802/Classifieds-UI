@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const CATEGORIES_URL = `${API_URL}/Categories`;
@@ -23,7 +23,7 @@ const categoryService = {
    */
   createCategory: async (categoryData) => {
     try {
-      const response = await axios.post(`${CATEGORIES_URL}/create/category`, categoryData);
+      const response = await apiClient.post(`${CATEGORIES_URL}/create/category`, categoryData);
       return response.data;
     } catch (error) {
       console.error('Kategori oluşturulurken hata:', error);
@@ -52,7 +52,7 @@ const categoryService = {
    */
   getAllCategories: async (params = {}) => {
     try {
-      const response = await axios.get(`${CATEGORIES_URL}/all/category`, { params });
+      const response = await apiClient.get(`${CATEGORIES_URL}/all/category`, { params });
       return response.data;
     } catch (error) {
       console.error('Kategoriler alınırken hata:', error);
@@ -77,12 +77,36 @@ const categoryService = {
    */
   getCategoryById: async (id) => {
     try {
-      const response = await axios.get(`${CATEGORIES_URL}/byId/category`, {
+      const response = await apiClient.get(`${CATEGORIES_URL}/byId/category`, {
         params: { Id: id }
       });
       return response.data;
     } catch (error) {
       console.error('Kategori detayı alınırken hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Kategori siler
+   * @param {string} id - Silinecek kategori ID'si
+   * @returns {Promise<Object>} Silme işlemi sonucu
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false
+   * }
+   */
+  deleteCategory: async (id) => {
+    try {
+      const response = await apiClient.delete(`${CATEGORIES_URL}/delete/category`, {
+        params: { Id: id }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Kategori silinirken hata:', error);
       throw error;
     }
   },
@@ -107,7 +131,7 @@ const categoryService = {
    */
   createMainCategory: async (mainCategoryData) => {
     try {
-      const response = await axios.post(`${CATEGORIES_URL}/create/main-category`, mainCategoryData);
+      const response = await apiClient.post(`${CATEGORIES_URL}/create/main-category`, mainCategoryData);
       return response.data;
     } catch (error) {
       console.error('Ana kategori oluşturulurken hata:', error);
@@ -136,7 +160,7 @@ const categoryService = {
    */
   getAllMainCategories: async (params = {}) => {
     try {
-      const response = await axios.get(`${CATEGORIES_URL}/all/main-category`, { params });
+      const response = await apiClient.get(`${CATEGORIES_URL}/all/main-category`, { params });
       return response.data;
     } catch (error) {
       console.error('Ana kategoriler alınırken hata:', error);
@@ -161,12 +185,36 @@ const categoryService = {
    */
   getMainCategoryById: async (id) => {
     try {
-      const response = await axios.get(`${CATEGORIES_URL}/byId/main-category`, { 
+      const response = await apiClient.get(`${CATEGORIES_URL}/byId/main-category`, { 
         params: { Id: id } 
       });
       return response.data;
     } catch (error) {
       console.error('Ana kategori detayı alınırken hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Ana kategori siler
+   * @param {string} id - Silinecek ana kategori ID'si
+   * @returns {Promise<Object>} Silme işlemi sonucu
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false
+   * }
+   */
+  deleteMainCategory: async (id) => {
+    try {
+      const response = await apiClient.delete(`${CATEGORIES_URL}/delete/main-category`, {
+        params: { Id: id }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Ana kategori silinirken hata:', error);
       throw error;
     }
   },
@@ -196,7 +244,7 @@ const categoryService = {
    */
   createSubCategory: async (subCategoryData) => {
     try {
-      const response = await axios.post(`${CATEGORIES_URL}/create/sub-category`, subCategoryData);
+      const response = await apiClient.post(`${CATEGORIES_URL}/create/sub-category`, subCategoryData);
       return response.data;
     } catch (error) {
       console.error('Alt kategori oluşturulurken hata:', error);
@@ -225,7 +273,7 @@ const categoryService = {
    */
   getAllSubCategories: async (params = {}) => {
     try {
-      const response = await axios.get(`${CATEGORIES_URL}/all/sub-category`, { params });
+      const response = await apiClient.get(`${CATEGORIES_URL}/all/sub-category`, { params });
       return response.data;
     } catch (error) {
       console.error('Alt kategoriler alınırken hata:', error);
@@ -250,12 +298,56 @@ const categoryService = {
    */
   getSubCategoryById: async (id) => {
     try {
-      const response = await axios.get(`${CATEGORIES_URL}/byId/sub-category`, { 
+      const response = await apiClient.get(`${CATEGORIES_URL}/byId/sub-category`, { 
         params: { Id: id } 
       });
       return response.data;
     } catch (error) {
       console.error('Alt kategori detayı alınırken hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Alt kategori siler
+   * @param {string} id - Silinecek alt kategori ID'si
+   * @returns {Promise<Object>} Silme işlemi sonucu
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   "isSucceeded": true,
+   *   "message": "string",
+   *   "isFailed": false
+   * }
+   */
+  deleteSubCategory: async (id) => {
+    try {
+      const response = await apiClient.delete(`${CATEGORIES_URL}/delete/sub-category`, {
+        params: { Id: id }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Alt kategori silinirken hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Bir kategoriye ait ana kategorileri getirir
+   * @param {string} categoryId - Kategori ID'si
+   * @param {Object} params - Sayfalama parametreleri (PageNumber, PageSize)
+   * @returns {Promise<Object>} Ana kategori listesi sonucu
+   */
+  getMainCategoriesByCategoryId: async (categoryId, params = {}) => {
+    try {
+      const queryParams = { 
+        ...params,
+        categoryId 
+      };
+      const response = await apiClient.get(`${CATEGORIES_URL}/by-category/main-category`, { params: queryParams });
+      return response.data;
+    } catch (error) {
+      console.error('Kategoriye ait ana kategoriler alınırken hata:', error);
       throw error;
     }
   }

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './axiosConfig';
 import { API_URL } from '../config';
 
 const API_ENDPOINT = `${API_URL}/search`;
@@ -7,7 +7,7 @@ const searchService = {
   // Genel arama yapma
   async search(query, params = {}) {
     try {
-      const response = await axios.get(API_ENDPOINT, { 
+      const response = await apiClient.get(API_ENDPOINT, { 
         params: { 
           q: query,
           ...params 
@@ -23,7 +23,7 @@ const searchService = {
   // İlanlarda arama yapma
   async searchAds(query, params = {}) {
     try {
-      const response = await axios.get(`${API_ENDPOINT}/ads`, { 
+      const response = await apiClient.get(`${API_ENDPOINT}/ads`, { 
         params: { 
           q: query,
           ...params 
@@ -39,7 +39,7 @@ const searchService = {
   // Kategorilerde arama yapma
   async searchCategories(query, params = {}) {
     try {
-      const response = await axios.get(`${API_ENDPOINT}/categories`, { 
+      const response = await apiClient.get(`${API_ENDPOINT}/categories`, { 
         params: { 
           q: query,
           ...params 
@@ -55,7 +55,7 @@ const searchService = {
   // Kullanıcılarda arama yapma
   async searchUsers(query, params = {}) {
     try {
-      const response = await axios.get(`${API_ENDPOINT}/users`, { 
+      const response = await apiClient.get(`${API_ENDPOINT}/users`, { 
         params: { 
           q: query,
           ...params 
@@ -71,7 +71,7 @@ const searchService = {
   // Gelişmiş arama yapma (filtreleme ve sıralama seçenekleriyle)
   async advancedSearch(searchParams) {
     try {
-      const response = await axios.post(`${API_ENDPOINT}/advanced`, searchParams);
+      const response = await apiClient.post(`${API_ENDPOINT}/advanced`, searchParams);
       return response.data;
     } catch (error) {
       console.error('Gelişmiş arama yapılırken hata:', error);
@@ -82,7 +82,7 @@ const searchService = {
   // Arama önerilerini getir
   async getSearchSuggestions(query) {
     try {
-      const response = await axios.get(`${API_ENDPOINT}/suggestions`, { 
+      const response = await apiClient.get(`${API_ENDPOINT}/suggestions`, { 
         params: { q: query } 
       });
       return response.data;
@@ -95,7 +95,7 @@ const searchService = {
   // Popüler aramaları getir
   async getPopularSearches() {
     try {
-      const response = await axios.get(`${API_ENDPOINT}/popular`);
+      const response = await apiClient.get(`${API_ENDPOINT}/popular`);
       return response.data;
     } catch (error) {
       console.error('Popüler aramalar alınırken hata:', error);
@@ -106,7 +106,7 @@ const searchService = {
   // Kullanıcının arama geçmişini getir
   async getSearchHistory() {
     try {
-      const response = await axios.get(`${API_ENDPOINT}/history`);
+      const response = await apiClient.get(`${API_ENDPOINT}/history`);
       return response.data;
     } catch (error) {
       console.error('Arama geçmişi alınırken hata:', error);
@@ -117,7 +117,7 @@ const searchService = {
   // Arama geçmişini temizle
   async clearSearchHistory() {
     try {
-      const response = await axios.delete(`${API_ENDPOINT}/history`);
+      const response = await apiClient.delete(`${API_ENDPOINT}/history`);
       return response.data;
     } catch (error) {
       console.error('Arama geçmişi temizlenirken hata:', error);
