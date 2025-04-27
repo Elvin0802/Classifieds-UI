@@ -1,308 +1,475 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-toastify';
+import { FaUpload, FaTimes, FaImage, FaSave, FaArrowLeft } from 'react-icons/fa';
 import adService from '../../services/adService';
 import categoryService from '../../services/categoryService';
 import locationService from '../../services/locationService';
-import { FaUpload, FaTimes, FaImage, FaSave } from 'react-icons/fa';
 
 function CreateAd() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm();
+  const { isAuthenticated, user, loading } = useAuth();
   
-  const [isLoading, setIsLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   
-  // Kategori yönetimi
+  // Form verisi
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    isNew: true,
+    categoryId: '',
+    mainCategoryId: '',
+    locationId: '',
+    subCategoryValues: [],
+    images: []
+  });
+  
+  // Kategori verileri
   const [categories, setCategories] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   
-  // Konum yönetimi
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [neighborhoods, setNeighborhoods] = useState([]);
+  // Lokasyon verileri
+  const [locations, setLocations] = useState([]);
   
-  // Resim yönetimi
-  const [images, setImages] = useState([]);
+  // Resim verileri
   const [previewImages, setPreviewImages] = useState([]);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  
-  // Seçili değerleri izle
-  const selectedCategoryId = watch('categoryId');
-  const selectedMainCategoryId = watch('mainCategoryId');
-  const selectedProvinceId = watch('provinceId');
-  const selectedDistrictId = watch('districtId');
   
   // Kullanıcı girişi kontrolü
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/giris', { state: { from: '/ilan-ver' } });
+    // Eğer auth context yükleniyor ise, yükleme görüntüsü gösterilecek
+    if (loading) {
+      console.log('Auth durumu yükleniyor, kontrol erteleniyor...');
+      return;
     }
-  }, [isAuthenticated, navigate]);
+    
+    console.log('CreateAd: Auth durumu kontrol ediliyor:', isAuthenticated ? 'giriş yapılmış' : 'giriş yapılmamış');
+    
+    if (!isAuthenticated) {
+      console.log('CreateAd: Kimlik doğrulama gerekiyor, giriş sayfasına yönlendiriliyor');
+      
+      // Sadece kullanıcı bilgilendirmesi göster
+      toast.info('İlan oluşturmak için giriş yapmalısınız', {
+        autoClose: 2000,
+        position: 'top-center'
+      });
+      
+      // Mevcut URL'yi state olarak ilet, böylece giriş yapınca bu sayfaya dönebilir
+      const currentPath = window.location.pathname;
+      navigate('/login', { 
+        state: { from: currentPath },
+        replace: true // Geçmişi değiştir (geri butonu ile buraya dönmeyi engelle)
+      });
+    } else {
+      console.log('CreateAd: Kimlik doğrulama başarılı, ilan oluşturma sayfası görüntüleniyor');
+    }
+  }, [isAuthenticated, navigate, loading]);
   
   // Kategorileri getir
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await categoryService.getCategories();
-        if (response) {
-          setCategories(response);
-        }
-      } catch (err) {
-        console.error('Kategoriler yüklenirken hata oluştu:', err);
-        setError('Kategoriler yüklenemedi, lütfen daha sonra tekrar deneyin.');
+        const response = await categoryService.getAllCategories();
+        setCategories(response.data?.items || []);
+      } catch (error) {
+        console.error('Kategoriler alınırken hata:', error);
+        toast.error('Kategoriler yüklenemedi');
       }
     };
     
     fetchCategories();
   }, []);
   
-  // İlleri getir
+  // Lokasyonları getir
   useEffect(() => {
-    const fetchProvinces = async () => {
+    const fetchLocations = async () => {
       try {
-        const response = await locationService.getProvinces();
-        if (response) {
-          setProvinces(response);
-        }
-      } catch (err) {
-        console.error('İller yüklenirken hata oluştu:', err);
-        setError('Konum bilgileri yüklenemedi, lütfen daha sonra tekrar deneyin.');
+        const response = await locationService.getAll();
+        setLocations(response.data?.items || []);
+      } catch (error) {
+        console.error('Lokasyon bilgileri alınırken hata:', error);
+        toast.error('Konum bilgileri yüklenemedi');
       }
     };
     
-    fetchProvinces();
+    fetchLocations();
   }, []);
   
-  // Kategori seçildiğinde ana kategorileri getir
+  // Ana kategori seçildiğinde
   useEffect(() => {
     const fetchMainCategories = async () => {
-      if (!selectedCategoryId) {
+      if (!formData.categoryId) {
         setMainCategories([]);
-        setValue('mainCategoryId', '');
-        setValue('subCategoryId', '');
+        setFormData(prev => ({
+          ...prev,
+          mainCategoryId: '',
+          subCategoryValues: []
+        }));
         return;
       }
       
       try {
-        const response = await categoryService.getSubcategories(selectedCategoryId);
-        if (response) {
-          setMainCategories(response);
-          setValue('mainCategoryId', '');
-          setValue('subCategoryId', '');
+        // Kategori detayını getir ve içindeki ana kategorileri kullan
+        const response = await categoryService.getCategoryById(formData.categoryId);
+        const category = response.data?.item;
+        
+        if (category && category.mainCategories) {
+          setMainCategories(category.mainCategories || []);
+        } else {
+          setMainCategories([]);
         }
-      } catch (err) {
-        console.error('Ana kategoriler yüklenirken hata oluştu:', err);
+        
+        // Ana kategori seçimini sıfırla
+        setFormData(prev => ({
+          ...prev,
+          mainCategoryId: '',
+          subCategoryValues: []
+        }));
+      } catch (error) {
+        console.error('Ana kategoriler alınırken hata:', error);
+        toast.error('Ana kategoriler yüklenemedi');
       }
     };
     
     fetchMainCategories();
-  }, [selectedCategoryId, setValue]);
+  }, [formData.categoryId]);
   
-  // Ana kategori seçildiğinde alt kategorileri getir
+  // Alt kategorileri getir
   useEffect(() => {
     const fetchSubCategories = async () => {
-      if (!selectedMainCategoryId) {
+      if (!formData.mainCategoryId) {
         setSubCategories([]);
-        setValue('subCategoryId', '');
+        setFormData(prev => ({
+          ...prev,
+          subCategoryValues: []
+        }));
         return;
       }
       
       try {
-        const response = await categoryService.getSubcategories(selectedMainCategoryId);
-        if (response) {
-          setSubCategories(response);
-          setValue('subCategoryId', '');
+        // Ana kategori detayını getir ve içindeki alt kategorileri kullan
+        const response = await categoryService.getMainCategoryById(formData.mainCategoryId);
+        const mainCategory = response.data?.item;
+        
+        if (mainCategory && mainCategory.subCategories) {
+          setSubCategories(mainCategory.subCategories || []);
+          
+          // Alt kategori değerlerini başlat
+          const subCategoryValues = (mainCategory.subCategories || []).map(subCategory => ({
+            subCategoryId: subCategory.id,
+            value: '',
+            type: subCategory.type,
+            name: subCategory.name,
+            isRequired: subCategory.isRequired,
+            options: subCategory.options || []
+          }));
+          
+          setFormData(prev => ({
+            ...prev,
+            subCategoryValues
+          }));
+        } else {
+          setSubCategories([]);
+          setFormData(prev => ({
+            ...prev,
+            subCategoryValues: []
+          }));
         }
-      } catch (err) {
-        console.error('Alt kategoriler yüklenirken hata oluştu:', err);
+      } catch (error) {
+        console.error('Alt kategoriler alınırken hata:', error);
+        toast.error('Alt kategoriler yüklenemedi');
       }
     };
     
     fetchSubCategories();
-  }, [selectedMainCategoryId, setValue]);
+  }, [formData.mainCategoryId]);
   
-  // İl seçildiğinde ilçeleri getir
-  useEffect(() => {
-    const fetchDistricts = async () => {
-      if (!selectedProvinceId) {
-        setDistricts([]);
-        setValue('districtId', '');
-        setValue('neighborhoodId', '');
-        return;
-      }
-      
-      try {
-        const response = await locationService.getDistricts(selectedProvinceId);
-        if (response) {
-          setDistricts(response);
-          setValue('districtId', '');
-          setValue('neighborhoodId', '');
-        }
-      } catch (err) {
-        console.error('İlçeler yüklenirken hata oluştu:', err);
-      }
-    };
+  // Form değişiklikleri
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     
-    fetchDistricts();
-  }, [selectedProvinceId, setValue]);
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
   
-  // İlçe seçildiğinde mahalleleri getir
-  useEffect(() => {
-    const fetchNeighborhoods = async () => {
-      if (!selectedDistrictId) {
-        setNeighborhoods([]);
-        setValue('neighborhoodId', '');
-        return;
-      }
-      
-      try {
-        const response = await locationService.getNeighborhoods(selectedDistrictId);
-        if (response) {
-          setNeighborhoods(response);
-          setValue('neighborhoodId', '');
-        }
-      } catch (err) {
-        console.error('Mahalleler yüklenirken hata oluştu:', err);
-      }
-    };
-    
-    fetchNeighborhoods();
-  }, [selectedDistrictId, setValue]);
+  // Alt kategori değeri değiştiğinde
+  const handleSubCategoryValueChange = (subCategoryId, value) => {
+    setFormData(prev => ({
+      ...prev,
+      subCategoryValues: prev.subCategoryValues.map(item => 
+        item.subCategoryId === subCategoryId ? { ...item, value } : item
+      )
+    }));
+  };
   
-  // Resim yükleme işlemleri
-  const handleImageChange = (e) => {
+  // Resim yükleme işlemi
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
     
     // Maksimum 5 resim kontrolü
-    if (images.length + files.length > 5) {
-      setError('En fazla 5 resim yükleyebilirsiniz.');
+    if (formData.images.length + files.length > 5) {
+      toast.error('En fazla 5 resim yükleyebilirsiniz');
       return;
     }
     
-    // Dosya boyutu ve tip kontrolü
-    const validFiles = files.filter(file => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      
-      if (!validTypes.includes(file.type)) {
-        setError('Sadece JPG, PNG ve WebP formatında resimler kabul edilmektedir.');
-        return false;
-      }
-      
-      if (file.size > maxSize) {
-        setError('Resim boyutu 5MB\'dan küçük olmalıdır.');
-        return false;
-      }
-      
-      return true;
-    });
+    // Resim ekle
+    const newImages = [...formData.images, ...files];
+    setFormData(prev => ({
+      ...prev,
+      images: newImages
+    }));
     
-    if (validFiles.length === 0) return;
-    
-    // Yeni resimleri ekle
-    setImages(prev => [...prev, ...validFiles]);
-    
-    // Önizleme URL'lerini oluştur
-    const newPreviews = validFiles.map(file => {
-      return {
-        file,
-        url: URL.createObjectURL(file)
-      };
-    });
-    
+    // Önizleme oluştur
+    const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviewImages(prev => [...prev, ...newPreviews]);
-    setError(null);
   };
   
-  // Resim silme
-  const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+  // Resim silme işlemi
+  const handleRemoveImage = (index) => {
+    // Önizleme URL'ini serbest bırak
+    URL.revokeObjectURL(previewImages[index]);
     
-    // Önizleme URL'sini serbest bırak
-    URL.revokeObjectURL(previewImages[index].url);
+    // Resmi ve önizlemeyi kaldır
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+    
     setPreviewImages(prev => prev.filter((_, i) => i !== index));
   };
   
   // Form gönderme
-  const onSubmit = async (data) => {
-    if (images.length === 0) {
-      setError('En az bir resim eklemelisiniz.');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setPageLoading(true);
+    setError(null);
+    
+    // Validation
+    if (!formData.title.trim()) {
+      setError('İlan başlığı zorunludur');
+      setPageLoading(false);
       return;
     }
     
-    setIsLoading(true);
-    setError(null);
+    if (!formData.description.trim()) {
+      setError('İlan açıklaması zorunludur');
+      setPageLoading(false);
+      return;
+    }
+    
+    if (!formData.price || isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0) {
+      setError('Geçerli bir fiyat giriniz');
+      setPageLoading(false);
+      return;
+    }
+    
+    if (!formData.categoryId) {
+      setError('Kategori seçimi zorunludur');
+      setPageLoading(false);
+      return;
+    }
+    
+    if (!formData.mainCategoryId) {
+      setError('Alt kategori seçimi zorunludur');
+      setPageLoading(false);
+      return;
+    }
+    
+    if (!formData.locationId) {
+      setError('Konum seçimi zorunludur');
+      setPageLoading(false);
+      return;
+    }
+    
+    if (formData.images.length === 0) {
+      setError('En az bir resim eklemelisiniz');
+      setPageLoading(false);
+      return;
+    }
+    
+    // Zorunlu alt kategori değerlerini kontrol et
+    const requiredSubCategories = formData.subCategoryValues.filter(item => item.isRequired && !item.value);
+    if (requiredSubCategories.length > 0) {
+      setError(`"${requiredSubCategories[0].name}" alanı zorunludur`);
+      setPageLoading(false);
+      return;
+    }
     
     try {
-      // Metin alanlarını içeren ilan verisini oluştur
-      const adData = {
-        title: data.title,
-        description: data.description,
-        price: parseFloat(data.price),
-        categoryId: data.subCategoryId || data.mainCategoryId || data.categoryId, // En alt seviyedeki kategoriyi kullan
-        condition: data.condition,
-        location: {
-          provinceId: data.provinceId,
-          districtId: data.districtId,
-          neighborhoodId: data.neighborhoodId
-        },
-        contactPhone: data.contactPhone,
-        contactEmail: data.contactEmail || user.email,
-        isNegotiable: data.isNegotiable === 'true',
-        isDraft: false
-      };
+      // FormData oluştur (multipart/form-data gönderimi için)
+      const formDataToSend = new FormData();
+      
+      // Temel alanları doğrudan FormData'ya ekle
+      formDataToSend.append('Title', formData.title);
+      formDataToSend.append('Description', formData.description);
+      formDataToSend.append('Price', formData.price);
+      formDataToSend.append('IsNew', formData.isNew);
+      formDataToSend.append('CategoryId', formData.categoryId);
+      formDataToSend.append('MainCategoryId', formData.mainCategoryId);
+      formDataToSend.append('LocationId', formData.locationId);
+      
+      // Alt kategori değerlerini JSON formatında oluştur - API'nin istediği şekilde büyük harfle başlayan property isimleri
+      const filteredSubCategoryValues = formData.subCategoryValues
+        .filter(item => item.value)
+        .map(item => ({
+          SubCategoryId: item.subCategoryId,
+          Value: item.value
+        }));
+      
+      // JSON formatına çevir ve SubCategoryValuesJson olarak ekle (SubCategoryValues yerine)
+      const subCategoryValuesJson = JSON.stringify(filteredSubCategoryValues);
+      formDataToSend.append('SubCategoryValuesJson', subCategoryValuesJson);
+      
+      // Resimleri ekle
+      formData.images.forEach(image => {
+        formDataToSend.append('Images', image);
+      });
+      
+      console.log('FormData içeriği:');
+      for (let pair of formDataToSend.entries()) {
+        console.log(pair[0], typeof pair[1], 
+          pair[0] === 'SubCategoryValuesJson' ? JSON.parse(pair[1]) : 
+          typeof pair[1] === 'string' ? pair[1] : '[Dosya]');
+      }
       
       // İlanı oluştur
-      const createdAd = await adService.createAd(adData);
-      
-      if (createdAd && createdAd.id) {
-        // Resimleri yükle
-        setUploadingImage(true);
+      try {
+        const response = await adService.createWithImages(formDataToSend);
         
-        for (let i = 0; i < images.length; i++) {
-          await adService.uploadAdImage(createdAd.id, images[i]);
+        if (response.status === 201 || response.status === 200 || response.isSucceeded) {
+          setSuccess(true);
+          toast.success('İlan başarıyla oluşturuldu!');
+          
+          // İlan detay sayfasına yönlendir
+          setTimeout(() => {
+            if (response.data?.id) {
+              navigate(`/ads/${response.data.id}`);
+            } else {
+              navigate('/ads');
+            }
+          }, 1500);
+        } else {
+          throw new Error('İlan oluşturma başarısız: ' + (response?.message || 'Bilinmeyen hata'));
         }
-        
-        setSuccess(true);
-        setError(null);
-        
-        // 3 saniye sonra ilan detay sayfasına yönlendir
-        setTimeout(() => {
-          navigate(`/ilanlar/${createdAd.id}`);
-        }, 3000);
+      } catch (apiError) {
+        console.error('İlan oluşturma API hatası:', apiError);
+        setError(`İlan oluşturulamadı: ${apiError.message}`);
       }
-    } catch (err) {
-      console.error('İlan oluşturulurken hata oluştu:', err);
-      setError('İlan oluşturulurken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+    } catch (error) {
+      console.error('İlan oluşturulurken hata:', error);
+      setError('İlan oluşturulamadı, lütfen tekrar deneyin');
     } finally {
-      setIsLoading(false);
-      setUploadingImage(false);
+      setPageLoading(false);
     }
   };
   
+  // Alt kategori input alanını render et
+  const renderSubCategoryInput = (subCategory) => {
+    const { subCategoryId, type, name, value, options = [] } = subCategory;
+    
+    // Number input
+    if (type === 0) {
+      return (
+        <input
+          type="number"
+          value={value || ''}
+          onChange={(e) => handleSubCategoryValueChange(subCategoryId, e.target.value)}
+          className="input input-bordered w-full"
+          placeholder={`${name} değerini girin`}
+        />
+      );
+    }
+    
+    // Select input
+    if (type === 1) {
+      return (
+        <select
+          value={value || ''}
+          onChange={(e) => handleSubCategoryValueChange(subCategoryId, e.target.value)}
+          className="select select-bordered w-full"
+        >
+          <option value="" disabled>Seçiniz</option>
+          {options.map((option, idx) => (
+            <option key={idx} value={typeof option === 'object' ? option.value : option}>
+              {typeof option === 'object' ? option.value : option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    
+    // Text input (default)
+    return (
+      <input
+        type="text"
+        value={value || ''}
+        onChange={(e) => handleSubCategoryValueChange(subCategoryId, e.target.value)}
+        className="input input-bordered w-full"
+        placeholder={`${name} değerini girin`}
+      />
+    );
+  };
+  
+  // Loading durumunda bekletme ekranı göster
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p className="text-gray-600">Kimlik doğrulama kontrol ediliyor...</p>
+      </div>
+    );
+  }
+
+  // Giriş yapılmamışsa, sayfa içeriğini gösterme
+  // Not: useEffect tarafından zaten login sayfasına yönlendirilecek
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <p className="text-xl font-semibold text-gray-700 mb-4">Erişim Engellendi</p>
+        <p className="text-gray-600 mb-6">İlan oluşturmak için giriş yapmalısınız.</p>
+        <button
+          onClick={() => navigate('/login', { state: { from: window.location.pathname } })}
+          className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition"
+        >
+          Giriş Yap
+        </button>
+      </div>
+    );
+  }
+  
+  // Başarılı ise
   if (success) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="card bg-base-100 shadow-md max-w-2xl mx-auto">
-          <div className="card-body text-center">
-            <h1 className="card-title text-2xl mb-4 mx-auto">İlanınız Başarıyla Oluşturuldu!</h1>
-            <p className="mb-4">Tebrikler! İlanınız başarıyla yayınlandı. İlan detay sayfasına yönlendiriliyorsunuz...</p>
-            <span className="loading loading-spinner loading-md mx-auto"></span>
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="card bg-base-100 shadow-xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-success mb-4">İlan Başarıyla Oluşturuldu!</h2>
+          <p className="mb-4">İlanınız sisteme başarıyla kaydedildi.</p>
+          <div className="flex justify-center">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
           </div>
+          <p className="mt-4 text-sm text-gray-500">İlan detay sayfasına yönlendiriliyorsunuz...</p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Yeni İlan Oluştur</h1>
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Yeni İlan Oluştur</h1>
+        <button 
+          onClick={() => navigate(-1)}
+          className="btn btn-outline btn-sm"
+        >
+          <FaArrowLeft className="mr-2" /> Geri Dön
+        </button>
+      </div>
       
       {error && (
         <div className="alert alert-error mb-6">
@@ -311,282 +478,200 @@ function CreateAd() {
         </div>
       )}
       
-      <form onSubmit={handleSubmit(onSubmit)} className="card bg-base-100 shadow-md">
+      <form onSubmit={handleSubmit} className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          {/* İlan Bilgileri */}
-          <h2 className="text-xl font-semibold mb-4">İlan Bilgileri</h2>
+          <h2 className="card-title text-lg border-b pb-2 mb-4">İlan Bilgileri</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* İlan Başlığı */}
-            <div className="form-control md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Başlık */}
+            <div className="form-control col-span-full">
               <label className="label">
-                <span className="label-text">İlan Başlığı<span className="text-error">*</span></span>
+                <span className="label-text font-medium">İlan Başlığı<span className="text-red-500">*</span></span>
               </label>
               <input
                 type="text"
-                className={`input input-bordered w-full ${errors.title ? 'input-error' : ''}`}
-                placeholder="İlanınız için kısa ve açıklayıcı bir başlık girin"
-                {...register('title', { 
-                  required: 'Başlık zorunludur', 
-                  minLength: { value: 10, message: 'Başlık en az 10 karakter olmalıdır' },
-                  maxLength: { value: 100, message: 'Başlık en fazla 100 karakter olabilir' }
-                })}
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="input input-bordered w-full"
+                placeholder="İlan başlığını girin"
+                required
               />
-              {errors.title && <span className="text-error text-sm mt-1">{errors.title.message}</span>}
             </div>
             
-            {/* Kategori Seçimi */}
+            {/* Açıklama */}
+            <div className="form-control col-span-full">
+              <label className="label">
+                <span className="label-text font-medium">Açıklama<span className="text-red-500">*</span></span>
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className="textarea textarea-bordered h-24"
+                placeholder="İlan açıklamasını girin"
+                required
+              ></textarea>
+            </div>
+            
+            {/* Fiyat ve Durumu */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Kategori<span className="text-error">*</span></span>
+                <span className="label-text font-medium">Fiyat (TL)<span className="text-red-500">*</span></span>
+              </label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                className="input input-bordered w-full"
+                placeholder="Fiyat"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+            
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Ürün Durumu</span>
+              </label>
+              <div className="flex items-center space-x-4 mt-2">
+                <label className="cursor-pointer label justify-start gap-2">
+                  <input
+                    type="checkbox"
+                    name="isNew"
+                    checked={formData.isNew}
+                    onChange={handleChange}
+                    className="checkbox checkbox-primary"
+                  />
+                  <span className="label-text">Yeni</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Kategori Bilgileri</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Kategori */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Kategori<span className="text-red-500">*</span></span>
               </label>
               <select
-                className={`select select-bordered ${errors.categoryId ? 'select-error' : ''}`}
-                {...register('categoryId', { required: 'Kategori seçimi zorunludur' })}
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleChange}
+                className="select select-bordered w-full"
+                required
               >
-                <option value="">Kategori Seçin</option>
+                <option value="" disabled>Kategori Seçin</option>
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>{category.name}</option>
                 ))}
               </select>
-              {errors.categoryId && <span className="text-error text-sm mt-1">{errors.categoryId.message}</span>}
             </div>
             
             {/* Ana Kategori */}
-            {mainCategories.length > 0 && (
-              <div className="form-control">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Ana Kategori<span className="text-red-500">*</span></span>
+              </label>
+              <select
+                name="mainCategoryId"
+                value={formData.mainCategoryId}
+                onChange={handleChange}
+                className="select select-bordered w-full"
+                disabled={!formData.categoryId || mainCategories.length === 0}
+                required
+              >
+                <option value="" disabled>Ana Kategori Seçin</option>
+                {mainCategories.map(mainCategory => (
+                  <option key={mainCategory.id} value={mainCategory.id}>{mainCategory.name}</option>
+                ))}
+              </select>
+              {formData.categoryId && mainCategories.length === 0 && (
                 <label className="label">
-                  <span className="label-text">Ana Kategori<span className="text-error">*</span></span>
+                  <span className="label-text-alt text-warning">Bu kategoride ana kategori bulunmamaktadır</span>
                 </label>
-                <select
-                  className={`select select-bordered ${errors.mainCategoryId ? 'select-error' : ''}`}
-                  {...register('mainCategoryId', { required: 'Ana kategori seçimi zorunludur' })}
-                >
-                  <option value="">Ana Kategori Seçin</option>
-                  {mainCategories.map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
+              )}
+            </div>
+            
+            {/* Alt Kategori Değerleri */}
+            {formData.subCategoryValues.length > 0 && (
+              <div className="col-span-full mt-2">
+                <h3 className="font-medium mb-2">Alt Kategori Özellikleri</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {formData.subCategoryValues.map(subCategory => (
+                    <div className="form-control" key={subCategory.subCategoryId}>
+                      <label className="label">
+                        <span className="label-text">
+                          {subCategory.name}
+                          {subCategory.isRequired && <span className="text-red-500">*</span>}
+                        </span>
+                      </label>
+                      {renderSubCategoryInput(subCategory)}
+                    </div>
                   ))}
-                </select>
-                {errors.mainCategoryId && <span className="text-error text-sm mt-1">{errors.mainCategoryId.message}</span>}
+                </div>
               </div>
             )}
-            
-            {/* Alt Kategori */}
-            {subCategories.length > 0 && (
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Alt Kategori<span className="text-error">*</span></span>
-                </label>
-                <select
-                  className={`select select-bordered ${errors.subCategoryId ? 'select-error' : ''}`}
-                  {...register('subCategoryId', { required: 'Alt kategori seçimi zorunludur' })}
-                >
-                  <option value="">Alt Kategori Seçin</option>
-                  {subCategories.map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
-                {errors.subCategoryId && <span className="text-error text-sm mt-1">{errors.subCategoryId.message}</span>}
-              </div>
-            )}
-            
-            {/* Fiyat */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Fiyat (TL)<span className="text-error">*</span></span>
-              </label>
-              <input
-                type="number"
-                className={`input input-bordered w-full ${errors.price ? 'input-error' : ''}`}
-                placeholder="Fiyat"
-                min="0"
-                step="0.01"
-                {...register('price', { 
-                  required: 'Fiyat zorunludur', 
-                  min: { value: 0, message: 'Fiyat 0\'dan küçük olamaz' },
-                  validate: value => !isNaN(parseFloat(value)) || 'Geçerli bir sayı girin'
-                })}
-              />
-              {errors.price && <span className="text-error text-sm mt-1">{errors.price.message}</span>}
-            </div>
-            
-            {/* Pazarlık */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Pazarlık</span>
-              </label>
-              <select
-                className="select select-bordered"
-                {...register('isNegotiable')}
-              >
-                <option value="false">Pazarlık Yok</option>
-                <option value="true">Pazarlık Var</option>
-              </select>
-            </div>
-            
-            {/* Ürün Durumu */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Ürün Durumu<span className="text-error">*</span></span>
-              </label>
-              <select
-                className={`select select-bordered ${errors.condition ? 'select-error' : ''}`}
-                {...register('condition', { required: 'Ürün durumu seçimi zorunludur' })}
-              >
-                <option value="">Durum Seçin</option>
-                <option value="new">Yeni</option>
-                <option value="likenew">Yeni Gibi</option>
-                <option value="good">İyi</option>
-                <option value="fair">Orta</option>
-                <option value="poor">Kötü</option>
-              </select>
-              {errors.condition && <span className="text-error text-sm mt-1">{errors.condition.message}</span>}
-            </div>
-            
-            {/* Açıklama */}
-            <div className="form-control md:col-span-2">
-              <label className="label">
-                <span className="label-text">Açıklama<span className="text-error">*</span></span>
-              </label>
-              <textarea
-                className={`textarea textarea-bordered h-32 ${errors.description ? 'textarea-error' : ''}`}
-                placeholder="İlanınızla ilgili detaylı bilgi verin"
-                {...register('description', { 
-                  required: 'Açıklama zorunludur', 
-                  minLength: { value: 30, message: 'Açıklama en az 30 karakter olmalıdır' },
-                  maxLength: { value: 2000, message: 'Açıklama en fazla 2000 karakter olabilir' }
-                })}
-              ></textarea>
-              {errors.description && <span className="text-error text-sm mt-1">{errors.description.message}</span>}
-              <div className="text-xs text-gray-500 mt-1 text-right">
-                <span>{watch('description')?.length || 0}/2000</span>
-              </div>
-            </div>
           </div>
           
-          {/* Konum Bilgileri */}
-          <h2 className="text-xl font-semibold mb-4 mt-8">Konum Bilgileri</h2>
+          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Konum Bilgisi</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* İl */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* Lokasyon */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text">İl<span className="text-error">*</span></span>
+                <span className="label-text font-medium">Lokasyon<span className="text-red-500">*</span></span>
               </label>
               <select
-                className={`select select-bordered ${errors.provinceId ? 'select-error' : ''}`}
-                {...register('provinceId', { required: 'İl seçimi zorunludur' })}
+                name="locationId"
+                value={formData.locationId}
+                onChange={handleChange}
+                className="select select-bordered w-full"
+                required
               >
-                <option value="">İl Seçin</option>
-                {provinces.map(province => (
-                  <option key={province.id} value={province.id}>{province.name}</option>
-                ))}
-              </select>
-              {errors.provinceId && <span className="text-error text-sm mt-1">{errors.provinceId.message}</span>}
-            </div>
-            
-            {/* İlçe */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">İlçe<span className="text-error">*</span></span>
-              </label>
-              <select
-                className={`select select-bordered ${errors.districtId ? 'select-error' : ''}`}
-                disabled={!selectedProvinceId}
-                {...register('districtId', { required: 'İlçe seçimi zorunludur' })}
-              >
-                <option value="">İlçe Seçin</option>
-                {districts.map(district => (
-                  <option key={district.id} value={district.id}>{district.name}</option>
-                ))}
-              </select>
-              {errors.districtId && <span className="text-error text-sm mt-1">{errors.districtId.message}</span>}
-            </div>
-            
-            {/* Mahalle */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Mahalle</span>
-              </label>
-              <select
-                className="select select-bordered"
-                disabled={!selectedDistrictId}
-                {...register('neighborhoodId')}
-              >
-                <option value="">Mahalle Seçin (Opsiyonel)</option>
-                {neighborhoods.map(neighborhood => (
-                  <option key={neighborhood.id} value={neighborhood.id}>{neighborhood.name}</option>
+                <option value="" disabled>Lokasyon Seçin</option>
+                {locations.map(location => (
+                  <option key={location.id} value={location.id}>
+                    {location.city}, {location.country}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           
-          {/* İletişim Bilgileri */}
-          <h2 className="text-xl font-semibold mb-4 mt-8">İletişim Bilgileri</h2>
+          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Resimler</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Telefon */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Telefon Numarası<span className="text-error">*</span></span>
-              </label>
-              <input
-                type="tel"
-                className={`input input-bordered w-full ${errors.contactPhone ? 'input-error' : ''}`}
-                placeholder="05XX XXX XX XX"
-                {...register('contactPhone', { 
-                  required: 'Telefon numarası zorunludur'
-                })}
-              />
-              {errors.contactPhone && <span className="text-error text-sm mt-1">{errors.contactPhone.message}</span>}
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-medium">İlan Resimleri<span className="text-red-500">*</span></span>
+              <span className="label-text-alt">{formData.images.length}/5</span>
+            </label>
             
-            {/* E-posta */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">E-posta Adresi</span>
-              </label>
-              <input
-                type="email"
-                className={`input input-bordered w-full ${errors.contactEmail ? 'input-error' : ''}`}
-                placeholder={user?.email || 'E-posta adresiniz'}
-                {...register('contactEmail', { 
-                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Geçerli bir e-posta adresi girin' }
-                })}
-              />
-              {errors.contactEmail && <span className="text-error text-sm mt-1">{errors.contactEmail.message}</span>}
-            </div>
-          </div>
-          
-          {/* Resim Yükleme */}
-          <h2 className="text-xl font-semibold mb-4 mt-8">Resimler<span className="text-error">*</span></h2>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600">En fazla 5 resim yükleyebilirsiniz. Desteklenen formatlar: JPG, PNG, WebP. Maksimum boyut: 5MB.</p>
-              <span className="text-sm font-medium">{images.length}/5</span>
-            </div>
-            
-            {/* Resim Önizleme */}
+            {/* Resim Önizlemeleri */}
             {previewImages.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-4">
-                {previewImages.map((preview, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={preview.url}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 my-2">
+                {previewImages.map((src, index) => (
+                  <div key={index} className="relative rounded overflow-hidden border border-gray-200 h-24">
+                    <img 
+                      src={src} 
+                      alt={`İlan görseli ${index + 1}`} 
+                      className="w-full h-full object-cover"
                     />
                     <button
                       type="button"
-                      className="absolute top-2 right-2 bg-error hover:bg-red-700 text-white rounded-full p-1"
-                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs"
+                      onClick={() => handleRemoveImage(index)}
                     >
-                      <FaTimes size={14} />
+                      <FaTimes />
                     </button>
                     {index === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-primary text-white text-center text-xs py-1">
-                        Ana Resim
+                      <div className="absolute bottom-0 left-0 right-0 bg-primary text-white text-xs py-0.5 text-center">
+                        Ana Görsel
                       </div>
                     )}
                   </div>
@@ -594,48 +679,44 @@ function CreateAd() {
               </div>
             )}
             
-            {/* Resim Yükleme Butonu */}
-            {images.length < 5 && (
-              <div className="flex items-center justify-center">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <FaUpload className="mb-3 text-gray-400" size={24} />
-                    <p className="mb-2 text-sm text-gray-500">
-                      <span className="font-semibold">Resim yüklemek için tıklayın</span>
-                    </p>
-                    <p className="text-xs text-gray-500">Desteklenen formatlar: JPG, PNG, WebP</p>
-                  </div>
+            {/* Resim Yükleme */}
+            {formData.images.length < 5 && (
+              <div className="mt-2">
+                <label className="btn btn-outline btn-block">
+                  <FaUpload className="mr-2" /> Resim Ekle
                   <input
                     type="file"
-                    className="hidden"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     multiple
-                    onChange={handleImageChange}
+                    className="hidden"
+                    onChange={handleImageUpload}
                   />
                 </label>
+                <p className="text-xs text-gray-500 mt-1 text-center">
+                  En fazla 5 adet resim ekleyebilirsiniz
+                </p>
               </div>
             )}
           </div>
           
-          {/* Form Gönderme */}
-          <div className="mt-8 flex flex-col sm:flex-row justify-end gap-4">
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => navigate('/ilanlar')}
-              disabled={isLoading || uploadingImage}
+          <div className="card-actions justify-end mt-6">
+            <button 
+              type="button" 
+              className="btn btn-ghost"
+              onClick={() => navigate(-1)}
+              disabled={pageLoading}
             >
               İptal
             </button>
-            <button
-              type="submit"
+            <button 
+              type="submit" 
               className="btn btn-primary"
-              disabled={isLoading || uploadingImage}
+              disabled={pageLoading}
             >
-              {isLoading || uploadingImage ? (
+              {pageLoading ? (
                 <>
                   <span className="loading loading-spinner loading-xs"></span>
-                  {uploadingImage ? 'Resimler Yükleniyor...' : 'İlan Oluşturuluyor...'}
+                  İlan Oluşturuluyor...
                 </>
               ) : (
                 <>

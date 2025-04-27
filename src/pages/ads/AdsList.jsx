@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountDown, FaSortAmountUp } from 'react-icons/fa';
 import AdCard from '../../components/ad/AdCard';
@@ -8,12 +8,16 @@ import categoryService from '../../services/categoryService';
 import locationService from '../../services/locationService';
 import debounce from 'lodash.debounce';
 import { toast } from 'react-toastify';
+import React from 'react';
 
 function AdsList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [ads, setAds] = useState([]);
+  const [featuredAds, setFeaturedAds] = useState([]); // Öne çıkan ilanlar için ayrı state
   const [isLoading, setIsLoading] = useState(true);
+  const [isFeaturedLoading, setIsFeaturedLoading] = useState(true); // Öne çıkan ilanlar için yükleme durumu
   const [error, setError] = useState(null);
+  const [featuredError, setFeaturedError] = useState(null); // Öne çıkan ilanlar için hata durumu
   const [categories, setCategories] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -57,6 +61,59 @@ function AdsList() {
 
     fetchFilters();
   }, []);
+  
+  // Öne çıkan ilanları getir - Sayfa yüklendiğinde ve filtreleme parametreleri değiştiğinde çalışacak
+  useEffect(() => {
+    const fetchFeaturedAds = async () => {
+      setIsFeaturedLoading(true);
+      setFeaturedError(null);
+      
+      try {
+        // Kategori ve lokasyon filtreleri öne çıkan ilanlar için de geçerli olsun
+        const featuredParams = {
+          pageNumber: 1,
+          pageSize: 12, // Üstte 12 öne çıkan ilan göster
+          sortBy: sortBy,
+          isDescending: sortDir === 'desc',
+          adStatus: 1, // Aktif ilanlar
+          categoryId: selectedCategory || null,
+          mainCategoryId: selectedMainCategory || null,
+          locationId: selectedLocation || null,
+          searchTitle: searchTerm || null,
+          minPrice: minPrice ? parseInt(minPrice, 10) : null,
+          maxPrice: maxPrice ? parseInt(maxPrice, 10) : null,
+          isNew: isNew === '' ? null : isNew === 'true',
+          isFeatured: true // Her zaman true gönder
+        };
+        
+        console.log('Öne çıkan ilanlar için istek parametreleri:', featuredParams);
+        
+        const response = await adService.getFeaturedAds(featuredParams);
+        
+        if (response && response.data && response.data.items) {
+          setFeaturedAds(response.data.items);
+        } else {
+          setFeaturedError('Öne çıkan ilanlar yüklenemedi.');
+          setFeaturedAds([]);
+        }
+      } catch (err) {
+        console.error('Öne çıkan ilanlar yüklenirken hata oluştu:', err);
+        setFeaturedError('Öne çıkan ilanlar yüklenemedi.');
+        setFeaturedAds([]);
+      } finally {
+        setIsFeaturedLoading(false);
+      }
+    };
+    
+    // Sadece "isFeatured" true değilse öne çıkan ilanları ayrıca getir
+    // Eğer "isFeatured" true ise, normal fetchAds işlemi zaten öne çıkan ilanları getirecek
+    if (!isFeatured) {
+      fetchFeaturedAds();
+    } else {
+      setFeaturedAds([]); // isFeatured filtreleniyorsa öne çıkan ilanları temizle
+      setIsFeaturedLoading(false);
+    }
+  }, [selectedCategory, selectedMainCategory, selectedLocation, searchTerm, minPrice, maxPrice, isNew, sortBy, sortDir, isFeatured]);
 
   // Seçilen kategoriye bağlı olarak alt kategorileri yükle
   useEffect(() => {
@@ -83,39 +140,56 @@ function AdsList() {
   }, [selectedCategory, categories]);
 
   // İlanları getir
-  const fetchAds = useCallback(async () => {
+  const fetchAds = useCallback(async (options = {}) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Filtre parametrelerini hazırla
-      const params = {
-        page: currentPage,
-        pageSize: pageSize,
-        sortBy: sortBy,
-        sortDir: sortDir,
-        searchTerm: searchTerm || null,
-        minPrice: minPrice ? parseInt(minPrice, 10) : null,
-        maxPrice: maxPrice ? parseInt(maxPrice, 10) : null,
-        categoryId: selectedCategory || null,
-        mainCategoryId: selectedMainCategory || null,
-        locationId: selectedLocation || null,
-        isNew: isNew === '' ? null : isNew === 'true',
-        isFeatured: isFeatured || null,
-        status: 'ACTIVE' // Sadece aktif ilanları göster
+      // API'ye gönderilecek parametreleri hazırla
+      const apiParams = {
+        pageNumber: options.currentPage || currentPage,
+        pageSize: options.pageSize || pageSize,
+        sortBy: options.sortBy || sortBy || null,
+        isDescending: options.sortDir ? options.sortDir === 'desc' : sortDir === 'desc',
+        searchTitle: options.searchTerm || searchTerm || null,
+        minPrice: options.minPrice ? parseInt(options.minPrice, 10) : minPrice ? parseInt(minPrice, 10) : null,
+        maxPrice: options.maxPrice ? parseInt(options.maxPrice, 10) : maxPrice ? parseInt(maxPrice, 10) : null,
+        categoryId: options.selectedCategory || selectedCategory || null,
+        mainCategoryId: options.selectedMainCategory || selectedMainCategory || null,
+        locationId: options.selectedLocation || selectedLocation || null,
+        isNew: options.isNew === '' ? null : options.isNew === 'true',
+        isFeatured: options.isFeatured === undefined ? (isFeatured === undefined ? false : Boolean(isFeatured)) : Boolean(options.isFeatured),
+        adStatus: 1 // Sadece aktif ilanları göster
       };
 
-      // URL parametrelerini güncelle
-      const updatedParams = new URLSearchParams();
-      for (const [key, value] of Object.entries(params)) {
-        if (value !== null && value !== '') {
-          updatedParams.set(key, value);
+      // URL parametrelerini güncelle (sadece fetchAds doğrudan çağrıldığında)
+      if (!options.skipUrlUpdate) {
+        const updatedParams = new URLSearchParams();
+        for (const [key, value] of Object.entries({
+          page: apiParams.pageNumber,
+          pageSize: apiParams.pageSize,
+          sortBy: apiParams.sortBy,
+          sortDir: apiParams.isDescending ? 'desc' : 'asc',
+          searchTerm: apiParams.searchTitle,
+          minPrice: apiParams.minPrice,
+          maxPrice: apiParams.maxPrice,
+          categoryId: apiParams.categoryId,
+          mainCategoryId: apiParams.mainCategoryId,
+          locationId: apiParams.locationId,
+          isNew: apiParams.isNew === null ? '' : String(apiParams.isNew),
+          isFeatured: apiParams.isFeatured
+        })) {
+          if (value !== null && value !== undefined && value !== '') {
+            updatedParams.set(key, value);
+          }
         }
+        setSearchParams(updatedParams, { replace: true }); // replace: true kullanarak ekstra tarayıcı geçmişi oluşturmasını engelliyoruz
       }
-      setSearchParams(updatedParams);
+      
+      console.log('Normal ilanlar için istek parametreleri:', apiParams);
 
-      // İlanları al
-      const response = await adService.getAll(params);
+      // İlanları al - Doğrudan API parametrelerini gönder
+      const response = await adService.getAll(apiParams);
 
       if (response && response.isSucceeded && response.data) {
         setAds(response.data.items);
@@ -153,19 +227,29 @@ function AdsList() {
     setSearchParams
   ]);
 
-  // Parametreler değiştiğinde ilanları yeniden yükle
+  // Sayfa ilk yüklendiğinde ilanları getir
   useEffect(() => {
-    fetchAds();
-  }, [fetchAds]);
+    // Sadece komponent mount edildiğinde çalış
+    fetchAds({ skipUrlUpdate: true });
+    // fetchAds'in bağımlılık listesini burada belirtmiyoruz çünkü 
+    // her değiştiğinde çağrılmasını istemiyoruz
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // URL'den filtre parametrelerini al
+  // URL parametreleri değiştiğinde güncelle (ama istek gönderme)
   useEffect(() => {
+    // URL'den parametreleri almak için bu useEffect'i koruyoruz
+    // Ama ilanları otomatik yüklemiyoruz, URL değiştiğinde
     const page = searchParams.get('page');
-    if (page) setCurrentPage(parseInt(page, 10));
+    if (page && parseInt(page, 10) !== currentPage) {
+      setCurrentPage(parseInt(page, 10));
+    }
     
     const pageSize = searchParams.get('pageSize');
-    if (pageSize) setPageSize(parseInt(pageSize, 10));
+    if (pageSize && parseInt(pageSize, 10) !== currentPage) {
+      setPageSize(parseInt(pageSize, 10));
+    }
     
+    // Diğer parametreler sadece URL'den okunacak ama otomatik istek gönderilmeyecek
     const sortBy = searchParams.get('sortBy');
     if (sortBy) setSortBy(sortBy);
     
@@ -173,7 +257,11 @@ function AdsList() {
     if (sortDir) setSortDir(sortDir);
     
     const searchTerm = searchParams.get('searchTerm');
-    if (searchTerm) setSearchTerm(searchTerm);
+    // searchTerm güncellendiğinde otomatik istek göndermeyi önle
+    if (searchTerm && searchTerm !== searchTermRef.current) {
+      setSearchTerm(searchTerm);
+      searchTermRef.current = searchTerm;
+    }
     
     const minPrice = searchParams.get('minPrice');
     if (minPrice) setMinPrice(minPrice);
@@ -195,35 +283,77 @@ function AdsList() {
     
     const isFeatured = searchParams.get('isFeatured');
     if (isFeatured) setIsFeatured(isFeatured === 'true');
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Bu ref, arama teriminin son değerini takip etmek için
+  const searchTermRef = React.useRef(searchTerm);
+  
+  // currentPage değiştiğinde ilanları getir
+  useEffect(() => {
+    // Sadece sayfa değiştiğinde yeni istekler yap
+    if (currentPage > 0) {
+      fetchAds({ skipUrlUpdate: false });
+    }
+  }, [currentPage, fetchAds]);
 
   // Arama sonuçlarını gecikme ile uygula
-  const debouncedSearch = useCallback(
-    debounce(() => {
-      setCurrentPage(1); // Arama yapıldığında ilk sayfaya dön
-      fetchAds();
-    }, 500),
-    [fetchAds]
-  );
+  const debouncedSearchRef = useRef(null);
+  
+  // Component mount edildiğinde debounced search oluştur
+  useEffect(() => {
+    debouncedSearchRef.current = debounce((term) => {
+      console.log('Debounced arama terimi:', term);
+      // searchTermRef güncellemesi
+      searchTermRef.current = term;
+      // URL parametrelerini güncelle
+      const updatedParams = new URLSearchParams(searchParams);
+      if (term) {
+        updatedParams.set('searchTerm', term);
+      } else {
+        updatedParams.delete('searchTerm');
+      }
+      updatedParams.set('page', '1');
+      setSearchParams(updatedParams, { replace: true });
+      
+      // Sayfa 1'e dön ve yeni istek gönder
+      setCurrentPage(1);
+      fetchAds({ searchTerm: term, currentPage: 1, skipUrlUpdate: true });
+    }, 500);
+    
+    // Komponent unmount edildiğinde debounce fonksiyonunu temizle
+    return () => {
+      if (debouncedSearchRef.current) {
+        debouncedSearchRef.current.cancel();
+      }
+    };
+  }, [fetchAds, searchParams, setSearchParams]);
 
   // Arama yapıldığında
   const handleSearch = (e) => {
     e.preventDefault();
-    setCurrentPage(1);
-    fetchAds();
+    fetchAds({
+      currentPage: 1, // Arama yaparken her zaman ilk sayfadan başla
+      searchTitle: searchTerm
+    });
   };
 
   // Arama alanı değiştiğinde
   const handleSearchInput = (e) => {
-    setSearchTerm(e.target.value);
-    debouncedSearch();
+    const term = e.target.value;
+    setSearchTerm(term);
+    
+    // Debounce fonksiyonu ile searchTerm değişimine göre istek gönder
+    if (debouncedSearchRef.current) {
+      debouncedSearchRef.current(term);
+    }
   };
 
   // Filtreleri uygula
   const applyFilters = () => {
-    setCurrentPage(1);
-    fetchAds();
-    setShowFilters(false);
+    fetchAds({
+      currentPage: 1 // Filtreleri uygularken ilk sayfaya dön
+    });
+    setShowFilters(false); // Filtre menüsünü kapat
   };
 
   // Filtreleri temizle
@@ -247,33 +377,71 @@ function AdsList() {
 
   // Sayfa değişikliğini işle
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    window.scrollTo(0, 0);
+    // Sayfa değiştiğinde API'yi çağır
+    fetchAds({ currentPage: newPage });
   };
 
   // Favorilere ekle/çıkar
   const handleFavoriteToggle = async (adId) => {
     try {
-      const adToUpdate = ads.find(ad => ad.id === adId);
+      // Önce ilanı bul
+      const adToUpdate = ads.find(ad => ad.id === adId) || 
+                      featuredAds.find(ad => ad.id === adId);
       
+      if (!adToUpdate) {
+        console.error('İlan bulunamadı:', adId);
+        toast.error('İşlem yapılacak ilan bulunamadı');
+        return;
+      }
+      
+      // İlanın sahibiyse favoriye ekleme
+      if (adToUpdate.isOwner) {
+        toast.info('Kendi ilanınızı favorilere ekleyemezsiniz');
+        return;
+      }
+
+      console.log('İlan işlemi:', adToUpdate);
+      
+      // İlanın durumuna göre işlem yap
       if (adToUpdate.isSelected) {
-        await adService.unselectAd(adId);
-        toast.success('İlan favorilerden çıkarıldı');
-        // Favoriler listesinden kaldır
+        // Önce UI'ı güncelle
+        if (ads.find(ad => ad.id === adId)) {
+          setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
+        }
+        
+        if (featuredAds.find(ad => ad.id === adId)) {
+          setFeaturedAds(featuredAds.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
+        }
+        
         setFavoriteAds(favoriteAds.filter(id => id !== adId));
-        // İlanlar listesindeki isSelected durumunu güncelle
-        setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
+        toast.success('İlan favorilerden çıkarıldı');
+        
+        // Sonra API isteği gönder
+        await adService.unselectAd(adId);
       } else {
-        await adService.selectAd(adId);
-        toast.success('İlan favorilere eklendi');
-        // Favoriler listesine ekle
+        // Önce UI'ı güncelle
+        if (ads.find(ad => ad.id === adId)) {
+          setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
+        }
+        
+        if (featuredAds.find(ad => ad.id === adId)) {
+          setFeaturedAds(featuredAds.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
+        }
+        
         setFavoriteAds([...favoriteAds, adId]);
-        // İlanlar listesindeki isSelected durumunu güncelle
-        setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
+        toast.success('İlan favorilere eklendi');
+        
+        // Sonra API isteği gönder
+        await adService.selectAd(adId);
       }
     } catch (err) {
       console.error('Favori işlemi sırasında hata oluştu:', err);
-      toast.error('İşlem sırasında bir hata oluştu');
+      toast.error('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+      
+      // Hata durumunda ilanları tekrar yükle
+      setTimeout(() => {
+        fetchAds();
+      }, 500);
     }
   };
 
@@ -314,6 +482,25 @@ function AdsList() {
                   <FaSearch />
                 </button>
               </div>
+            </div>
+            
+            {/* Lokasyon filtresi - Ana arama çubuğunda */}
+            <div className="w-48">
+              <select
+                className="w-full px-3 py-2 border rounded-lg bg-white"
+                value={selectedLocation}
+                onChange={(e) => {
+                  setSelectedLocation(e.target.value);
+                  setTimeout(() => fetchAds(), 0);
+                }}
+              >
+                <option value="">Tüm Konumlar</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.city}, {location.country}
+                  </option>
+                ))}
+              </select>
             </div>
             
             <button
@@ -405,25 +592,6 @@ function AdsList() {
                 </div>
               )}
               
-              {/* Konum Seçimi */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Konum
-                </label>
-                <select
-                  className="w-full px-3 py-2 border rounded-lg bg-white"
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                >
-                  <option value="">Tüm Konumlar</option>
-                  {locations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.city}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
               {/* Fiyat Aralığı */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -503,188 +671,86 @@ function AdsList() {
         )}
       </div>
       
-      {/* Aktif Filtreler */}
-      {(selectedCategory || selectedMainCategory || selectedLocation || minPrice || maxPrice || isNew || isFeatured) && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          <span className="text-sm font-medium text-gray-700">Aktif Filtreler:</span>
-          
-          {selectedCategory && (
-            <span className="badge badge-outline gap-1">
-              Kategori: {categories.find(c => c.id === selectedCategory)?.name}
-              <button
-                onClick={() => {
-                  setSelectedCategory('');
-                  setSelectedMainCategory('');
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          {selectedMainCategory && (
-            <span className="badge badge-outline gap-1">
-              Alt Kategori: {mainCategories.find(c => c.id === selectedMainCategory)?.name}
-              <button
-                onClick={() => {
-                  setSelectedMainCategory('');
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          {selectedLocation && (
-            <span className="badge badge-outline gap-1">
-              Konum: {locations.find(l => l.id === selectedLocation)?.city}
-              <button
-                onClick={() => {
-                  setSelectedLocation('');
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          {minPrice && (
-            <span className="badge badge-outline gap-1">
-              Min Fiyat: {minPrice} TL
-              <button
-                onClick={() => {
-                  setMinPrice('');
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          {maxPrice && (
-            <span className="badge badge-outline gap-1">
-              Max Fiyat: {maxPrice} TL
-              <button
-                onClick={() => {
-                  setMaxPrice('');
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          {isNew !== '' && (
-            <span className="badge badge-outline gap-1">
-              Durum: {isNew === 'true' ? 'Yeni' : 'İkinci El'}
-              <button
-                onClick={() => {
-                  setIsNew('');
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          {isFeatured && (
-            <span className="badge badge-outline gap-1">
-              Öne Çıkan İlanlar
-              <button
-                onClick={() => {
-                  setIsFeatured(false);
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <FaTimes className="ml-1 text-xs" />
-              </button>
-            </span>
-          )}
-          
-          <button
-            className="text-sm text-primary hover:underline"
-            onClick={clearFilters}
-          >
-            Tümünü Temizle
-          </button>
-        </div>
-      )}
-      
-      {/* Sonuç Özeti */}
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <span className="text-sm text-gray-500">
-            {isLoading ? 'Yükleniyor...' : `${totalCount} ilan bulundu`}
-            {searchTerm && ` "${searchTerm}" araması için`}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Sayfa başına:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(parseInt(e.target.value, 10));
-              setCurrentPage(1);
-            }}
-            className="select select-bordered select-sm"
-          >
-            <option value="12">12</option>
-            <option value="24">24</option>
-            <option value="36">36</option>
-            <option value="48">48</option>
-          </select>
-        </div>
-      </div>
-      
-      {isLoading ? (
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          <p>{error}</p>
-        </div>
-      ) : ads.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-8 rounded text-center">
-          <p className="text-lg font-medium mb-4">Bu arama için sonuç bulunamadı</p>
-          <p>Lütfen farklı arama kriterleri deneyin veya filtreleri temizleyin</p>
-          <button
-            className="mt-4 btn btn-outline btn-sm"
-            onClick={clearFilters}
-          >
-            Filtreleri Temizle
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {ads.map((ad) => (
-              <AdCard 
-                key={ad.id} 
-                ad={ad} 
-                onFavoriteToggle={handleFavoriteToggle}
-              />
-            ))}
+      {/* Öne Çıkan İlanlar Bölümü */}
+      {!isFeatured && featuredAds.length > 0 && (
+        <div className="mb-8">
+          <div className="border-b pb-2 mb-4">
+            <h2 className="text-xl font-semibold">Öne Çıkan İlanlar</h2>
           </div>
           
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
+          {isFeaturedLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : featuredError ? (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {featuredError}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {featuredAds.map((ad) => (
+                <AdCard 
+                  key={ad.id} 
+                  ad={ad}
+                  onFavoriteToggle={() => handleFavoriteToggle(ad.id)}
+                />
+              ))}
             </div>
           )}
-        </>
+        </div>
       )}
+      
+      {/* Tüm İlanlar veya Filtrelenmiş İlanlar */}
+      <div>
+        <div className="border-b pb-2 mb-4">
+          <h2 className="text-xl font-semibold">
+            {isFeatured ? 'Öne Çıkan İlanlar' : 'İlanlar'}
+            {totalCount > 0 && ` (${totalCount})`}
+          </h2>
+        </div>
+        
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        ) : ads.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600">Aranan kriterlere uygun ilan bulunamadı.</p>
+            <button
+              onClick={clearFilters}
+              className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+            >
+              Filtreleri Temizle
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {ads.map((ad) => (
+                <AdCard 
+                  key={ad.id} 
+                  ad={ad}
+                  onFavoriteToggle={() => handleFavoriteToggle(ad.id)}
+                />
+              ))}
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
       
       {/* Yeni İlan Ekleme */}
       <div className="fixed bottom-8 right-8">

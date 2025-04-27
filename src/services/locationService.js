@@ -67,6 +67,37 @@ const locationService = {
   },
 
   /**
+   * Bir ile ait ilçeleri getirir
+   * @param {string} provinceId - İl ID'si
+   * @returns {Promise<Object>} İlçe listesi sonucu
+   * @example
+   * // Dönen veri formatı
+   * {
+   *   isSucceeded: true,
+   *   message: "string",
+   *   isFailed: false,
+   *   data: {
+   *     items: [ ... ilçe nesneleri ... ],
+   *     pageNumber: 0,
+   *     pageSize: 0,
+   *     totalCount: 0,
+   *     totalPages: 0
+   *   }
+   * }
+   */
+  getDistricts: async (provinceId) => {
+    try {
+      const response = await apiClient.get(`${LOCATIONS_URL}/GetDistricts`, { 
+        params: { ProvinceId: provinceId } 
+      });
+      return response.data;
+    } catch (error) {
+      console.error("İlçeler alınırken hata:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Yeni lokasyon oluşturur
    * @param {Object} locationData - Lokasyon verileri {city, country}
    * @returns {Promise<Object>} Oluşturma sonucu

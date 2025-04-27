@@ -1,9 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaSignInAlt, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../../contexts/AuthContext';
 import authService from '../../services/authService';
+import authStorage from '../../services/authStorage';
+import { clearAccessToken } from '../../services/axiosConfig';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +22,14 @@ const Login = () => {
   // Redirect sonrası geri dönülecek sayfa (eğer belirtilmişse)
   const from = location.state?.from || '/';
   
+  // Sayfa yüklendiğinde herhangi bir kalıntı oturum verisi varsa temizle
+  useEffect(() => {
+    // Sayfa yüklendiğinde localStorage'dan kalıntı login bilgilerini temizle
+    authStorage.clear();
+    clearAccessToken();
+    console.log('Login sayfası yüklendi: Oturum bilgileri temizlendi');
+  }, []);
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevState => ({
@@ -34,16 +44,18 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // API'ye login isteği
-      const response = await authService.login(formData);
+      // AuthContext'deki login fonksiyonunu kullan
+      // Bu fonksiyon authService.login'i içeride çağırıyor zaten
+      const loginResult = await login(formData);
       
-      // Token artık axiosConfig tarafından otomatik olarak alınıp saklanacak
-      // AuthContext state'ini güncelleyelim
-      await login(formData);
-      
-      // Başarılı giriş sonrası yönlendirme
-      toast.success('Giriş başarılı!');
-      navigate(from);
+      if (loginResult.success) {
+        // Başarılı giriş sonrası yönlendirme
+        toast.success('Giriş başarılı!');
+        navigate(from);
+      } else {
+        // Login başarısız
+        setError(loginResult.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+      }
     } catch (error) {
       console.error('Giriş sırasında hata:', error);
       
@@ -94,7 +106,6 @@ const Login = () => {
                     onChange={handleChange}
                     placeholder="E-posta adresiniz"
                     className="input input-bordered w-full pl-10"
-                    required
                   />
                 </div>
               </div>
@@ -115,7 +126,6 @@ const Login = () => {
                     onChange={handleChange}
                     placeholder="Şifreniz"
                     className="input input-bordered w-full pl-10 pr-10"
-                    required
                   />
                   <button
                     type="button"

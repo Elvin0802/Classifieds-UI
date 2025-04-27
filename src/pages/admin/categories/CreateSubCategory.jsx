@@ -1,66 +1,44 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
+import { FaSave, FaArrowLeft, FaPlus, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import categoryService from '../../../services/categoryService';
 
 function CreateSubCategory() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    icon: '',
-    order: 0,
-    isActive: true,
+    isRequired: true,
+    type: 0, // Varsayılan: Number
     mainCategoryId: '',
-    categoryId: ''
+    options: []
   });
 
-  // Kategorileri getir
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await categoryService.getAllCategories();
-        setCategories(response.data.items || []);
-      } catch (error) {
-        console.error('Kategoriler alınırken hata:', error);
-        toast.error('Kategoriler yüklenirken bir hata oluştu.');
-      }
-    };
-    
-    fetchCategories();
-  }, []);
+  const [newOption, setNewOption] = useState('');
+  const [showOptions, setShowOptions] = useState(false);
 
-  // Kategori değiştiğinde ana kategorileri getir
+  // Ana kategorileri getir
   useEffect(() => {
-    if (!selectedCategory) {
-      setMainCategories([]);
-      return;
-    }
-
     const fetchMainCategories = async () => {
       try {
-        const response = await categoryService.getMainCategoriesByCategoryId(selectedCategory);
+        const response = await categoryService.getAllMainCategories();
         setMainCategories(response.data.items || []);
-        
-        // Ana kategoriler değiştiğinde formda seçili ana kategoriyi temizle
-        setFormData(prev => ({
-          ...prev,
-          mainCategoryId: ''
-        }));
       } catch (error) {
         console.error('Ana kategoriler alınırken hata:', error);
         toast.error('Ana kategoriler yüklenirken bir hata oluştu.');
       }
     };
-
+    
     fetchMainCategories();
-  }, [selectedCategory]);
+  }, []);
+
+  // Type değiştiğinde Select ise options göster
+  useEffect(() => {
+    setShowOptions(parseInt(formData.type) === 1); // Select type: 1
+  }, [formData.type]);
 
   // Form verilerini güncelle
   const handleChange = (e) => {
@@ -71,20 +49,55 @@ function CreateSubCategory() {
       ...prevData,
       [name]: newValue
     }));
+  };
 
-    // Kategori değiştiğinde state'i güncelle
-    if (name === 'categoryId') {
-      setSelectedCategory(value);
+  // Yeni seçenek ekle
+  const handleAddOption = () => {
+    if (!newOption.trim()) {
+      toast.warning('Boş seçenek ekleyemezsiniz.');
+      return;
     }
+
+    setFormData(prevData => ({
+      ...prevData,
+      options: [...prevData.options, newOption.trim()]
+    }));
+    setNewOption('');
+  };
+
+  // Seçenek sil
+  const handleRemoveOption = (index) => {
+    setFormData(prevData => ({
+      ...prevData,
+      options: prevData.options.filter((_, i) => i !== index)
+    }));
   };
 
   // Alt kategori oluştur
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Select tipi seçilmişse ve seçenek yoksa hata ver
+    if (parseInt(formData.type) === 1 && formData.options.length === 0) {
+      toast.error('Seçim tipi için en az bir seçenek eklemelisiniz.');
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      await categoryService.createSubCategory(formData);
+      // API için doğru format oluştur
+      const apiData = {
+        ...formData,
+        type: parseInt(formData.type) // string'den number'a çevir
+      };
+
+      // Eğer type Select değilse, options boş dizi olsun
+      if (apiData.type !== 1) {
+        apiData.options = [];
+      }
+
+      await categoryService.createSubCategory(apiData);
       toast.success('Alt kategori başarıyla oluşturuldu.');
       navigate('/admin/categories');
     } catch (error) {
@@ -126,27 +139,6 @@ function CreateSubCategory() {
               />
             </div>
             
-            {/* Kategori */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Kategori*</span>
-              </label>
-              <select
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                className="select select-bordered"
-                required
-              >
-                <option value="" disabled>Kategori seçin</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
             {/* Ana Kategori */}
             <div className="form-control">
               <label className="label">
@@ -158,7 +150,6 @@ function CreateSubCategory() {
                 onChange={handleChange}
                 className="select select-bordered"
                 required
-                disabled={!selectedCategory}
               >
                 <option value="" disabled>Ana kategori seçin</option>
                 {mainCategories.map(mainCategory => (
@@ -167,77 +158,99 @@ function CreateSubCategory() {
                   </option>
                 ))}
               </select>
-              {!selectedCategory && (
-                <label className="label">
-                  <span className="label-text-alt text-gray-500">
-                    Önce bir kategori seçmelisiniz
-                  </span>
-                </label>
-              )}
             </div>
             
-            {/* İkon */}
+            {/* Tip Seçimi */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">İkon</span>
+                <span className="label-text font-medium">Veri Tipi*</span>
               </label>
-              <input
-                type="text"
-                name="icon"
-                value={formData.icon}
+              <select
+                name="type"
+                value={formData.type}
                 onChange={handleChange}
-                className="input input-bordered"
-                placeholder="icon-class veya URL"
-              />
-            </div>
-            
-            {/* Sıralama */}
-            <div className="form-control">
+                className="select select-bordered"
+                required
+              >
+                <option value="0">Sayı (Number)</option>
+                <option value="1">Seçim (Select)</option>
+                <option value="2">Metin (Text)</option>
+              </select>
               <label className="label">
-                <span className="label-text font-medium">Sıralama</span>
-              </label>
-              <input
-                type="number"
-                name="order"
-                value={formData.order}
-                onChange={handleChange}
-                className="input input-bordered"
-                min="0"
-              />
-            </div>
-            
-            {/* Aktif Mi? */}
-            <div className="form-control">
-              <label className="label cursor-pointer justify-start gap-4">
-                <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  className="checkbox checkbox-primary"
-                />
-                <span className="label-text font-medium">Aktif</span>
-              </label>
-              <label className="label mt-2">
                 <span className="label-text-alt text-gray-500">
-                  Alt kategori aktif olarak gösterilsin mi?
+                  Alt kategori için kullanılacak veri tipini seçin
                 </span>
               </label>
             </div>
             
-            {/* Açıklama */}
-            <div className="form-control md:col-span-2">
-              <label className="label">
-                <span className="label-text font-medium">Açıklama</span>
+            {/* Zorunlu Mu? */}
+            <div className="form-control">
+              <label className="label cursor-pointer justify-start gap-4">
+                <input
+                  type="checkbox"
+                  name="isRequired"
+                  checked={formData.isRequired}
+                  onChange={handleChange}
+                  className="checkbox checkbox-primary"
+                />
+                <span className="label-text font-medium">Zorunlu</span>
               </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="textarea textarea-bordered h-32"
-                placeholder="Alt kategori ile ilgili açıklama"
-              ></textarea>
+              <label className="label mt-2">
+                <span className="label-text-alt text-gray-500">
+                  Bu alt kategori ilan oluşturulurken zorunlu mu olsun?
+                </span>
+              </label>
             </div>
+            
+            {/* Eğer Select tipiyse seçenekler */}
+            {showOptions && (
+              <div className="form-control md:col-span-2">
+                <label className="label">
+                  <span className="label-text font-medium">Seçenekler*</span>
+                </label>
+                
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newOption}
+                    onChange={(e) => setNewOption(e.target.value)}
+                    className="input input-bordered flex-1"
+                    placeholder="Yeni seçenek girin"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="btn btn-primary"
+                  >
+                    <FaPlus /> Ekle
+                  </button>
+                </div>
+                
+                {formData.options.length === 0 ? (
+                  <div className="alert alert-warning">
+                    Henüz seçenek eklenmedi. Seçim tipi için en az bir seçenek eklemelisiniz.
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <p className="text-sm mb-2">Eklenen Seçenekler:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {formData.options.map((option, index) => (
+                        <div key={index} className="flex justify-between items-center bg-gray-100 p-2 rounded">
+                          <span>{option}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOption(index)}
+                            className="btn btn-error btn-sm btn-square"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="mt-8 flex justify-end">

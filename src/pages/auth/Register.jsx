@@ -81,13 +81,7 @@ function Register() {
                   type="text"
                   placeholder="Adınız"
                   className={`input input-bordered w-full ${errors.name ? 'input-error' : ''}`}
-                  {...register('name', { 
-                    required: 'İsim gereklidir',
-                    minLength: {
-                      value: 3,
-                      message: 'İsim en az 3 karakter olmalıdır'
-                    }
-                  })}
+                  {...register('name')}
                 />
                 {errors.name && <span className="text-error text-sm mt-1">{errors.name.message}</span>}
               </div>
@@ -101,13 +95,7 @@ function Register() {
                   type="email"
                   placeholder="E-posta adresiniz"
                   className={`input input-bordered w-full ${errors.email ? 'input-error' : ''}`}
-                  {...register('email', { 
-                    required: 'E-posta adresi gereklidir', 
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Geçerli bir e-posta adresi giriniz'
-                    } 
-                  })}
+                  {...register('email')}
                 />
                 {errors.email && <span className="text-error text-sm mt-1">{errors.email.message}</span>}
               </div>
@@ -121,9 +109,7 @@ function Register() {
                   type="tel"
                   placeholder="Telefon numaranız"
                   className={`input input-bordered w-full ${errors.phoneNumber ? 'input-error' : ''}`}
-                  {...register('phoneNumber', { 
-                    required: 'Telefon numarası gereklidir'
-                  })}
+                  {...register('phoneNumber')}
                 />
                 {errors.phoneNumber && <span className="text-error text-sm mt-1">{errors.phoneNumber.message}</span>}
               </div>
@@ -138,13 +124,7 @@ function Register() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Şifreniz"
                     className={`input input-bordered w-full pr-10 ${errors.password ? 'input-error' : ''}`}
-                    {...register('password', { 
-                      required: 'Şifre gereklidir',
-                      minLength: {
-                        value: 6,
-                        message: 'Şifre en az 6 karakter olmalıdır'
-                      }
-                    })}
+                    {...register('password')}
                   />
                   <button
                     type="button"
@@ -167,10 +147,7 @@ function Register() {
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="Şifrenizi tekrar girin"
                     className={`input input-bordered w-full pr-10 ${errors.confirmPassword ? 'input-error' : ''}`}
-                    {...register('confirmPassword', { 
-                      required: 'Şifre tekrarı gereklidir',
-                      validate: value => value === password || 'Şifreler eşleşmiyor'
-                    })}
+                    {...register('confirmPassword')}
                   />
                   <button
                     type="button"

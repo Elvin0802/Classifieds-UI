@@ -9,67 +9,67 @@ function Footer() {
     <footer className="bg-gray-800 text-white pt-10 pb-4">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Logo ve Hakkında */}
+          {/* Logo and About */}
           <div>
-            <h2 className="text-xl font-bold mb-4">elan.az</h2>
+            <h2 className="text-xl font-bold mb-4">classifieds.app</h2>
             <p className="text-gray-300 mb-4">
-              Azərbaycanda özəl elanlar üçün universal meydança
+              Universal platform for classified ads
             </p>
           </div>
           
-          {/* Linkler */}
+          {/* Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Faydalı Linklər</h3>
+            <h3 className="text-lg font-semibold mb-4">Useful Links</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/" className="text-gray-300 hover:text-white">
-                  Ana Səhifə
+                  Home
                 </Link>
               </li>
               <li>
                 <Link to="/ads" className="text-gray-300 hover:text-white">
-                  Elanlar
+                  Ads
                 </Link>
               </li>
               <li>
                 <Link to="/about" className="text-gray-300 hover:text-white">
-                  Haqqımızda
+                  About Us
                 </Link>
               </li>
               <li>
                 <Link to="/help" className="text-gray-300 hover:text-white">
-                  Kömək
+                  Help
                 </Link>
               </li>
             </ul>
           </div>
           
-          {/* Yasal ve Koşullar */}
+          {/* Legal and Terms */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Hüquqi</h3>
+            <h3 className="text-lg font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/privacy" className="text-gray-300 hover:text-white">
-                  Məxfilik Siyasəti
+                  Privacy Policy
                 </Link>
               </li>
               <li>
                 <Link to="#" className="text-gray-300 hover:text-white">
-                  İstifadəçi Razılaşması
+                  Terms of Service
                 </Link>
               </li>
               <li>
                 <Link to="#" className="text-gray-300 hover:text-white">
-                  Qaydalar
+                  Rules
                 </Link>
               </li>
             </ul>
           </div>
           
-          {/* İletişim */}
+          {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Əlaqə</h3>
-            <p className="text-gray-300 mb-2">info@elan.az</p>
+            <h3 className="text-lg font-semibold mb-4">Contact</h3>
+            <p className="text-gray-300 mb-2">info@classifieds.app</p>
             <p className="text-gray-300 mb-4">+994 12 345 67 89</p>
             
             <div className="flex space-x-4">
@@ -92,7 +92,7 @@ function Footer() {
         <hr className="border-gray-700 my-8" />
         
         <div className="text-center text-gray-400">
-          <p>&copy; {currentYear} elan.az. Bütün hüquqlar qorunur.</p>
+          <p>&copy; {currentYear} classifieds.app. All rights reserved.</p>
         </div>
       </div>
     </footer>

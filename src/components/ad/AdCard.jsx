@@ -36,7 +36,7 @@ const AdCard = ({ ad, onFavoriteToggle }) => {
   };
 
   // İlanın URL'ini oluştur
-  const adUrl = `/ilan/${ad.id}`;
+  const adUrl = `/ilanlar/${ad.id}`;
 
   return (
     <div className={`relative h-full rounded-lg shadow-md overflow-hidden bg-white hover:shadow-lg transition-shadow duration-300 ${ad.isFeatured ? 'border-2 border-yellow-400' : ''}`}>
@@ -59,7 +59,7 @@ const AdCard = ({ ad, onFavoriteToggle }) => {
           title={ad.isSelected ? "Favorilerden Çıkar" : "Favorilere Ekle"}
           type="button"
         >
-          {ad.isSelected ? (
+          {Boolean(ad.isSelected) ? (
             <FaHeart className="text-red-500 w-5 h-5" />
           ) : (
             <FaRegHeart className="text-gray-500 w-5 h-5" />

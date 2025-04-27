@@ -71,20 +71,31 @@ const SearchBar = () => {
         />
         
         <FormControl sx={{ minWidth: { xs: '100%', md: 240 } }}>
-          <InputLabel id="location-select-label">Konum</InputLabel>
+          <InputLabel id="location-select-label" sx={{ color: 'primary.main' }}>Konum</InputLabel>
           <Select
             labelId="location-select-label"
             id="location-select"
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
             label="Konum"
+            sx={{ 
+              color: 'text.primary',
+              '& .MuiSelect-select': { 
+                color: 'text.primary',
+                fontWeight: 'medium',
+                backgroundColor: 'white' 
+              },
+              '& .MuiMenuItem-root': {
+                color: 'text.primary'
+              }
+            }}
             startAdornment={
               <InputAdornment position="start">
                 <LocationOnIcon color="primary" />
               </InputAdornment>
             }
           >
-            <MenuItem value="">Tüm Türkiye</MenuItem>
+            <MenuItem value="" sx={{ color: 'text.primary' }}>Tüm Türkiye</MenuItem>
             {loading ? (
               <MenuItem disabled>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -94,8 +105,8 @@ const SearchBar = () => {
               </MenuItem>
             ) : (
               locations.map((location) => (
-                <MenuItem key={location.id} value={location.id}>
-                  {location.cityName || location.name}
+                <MenuItem key={location.id} value={location.id} sx={{ color: 'text.primary', fontWeight: 'normal' }}>
+                  {location.city}, {location.country}
                 </MenuItem>
               ))
             )}

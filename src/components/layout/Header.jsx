@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaBars, FaTimes, FaUser, FaSignOutAlt, FaPlus, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUser, FaSignOutAlt, FaPlus, FaChevronDown, FaShieldAlt, FaEnvelope } from 'react-icons/fa';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -66,13 +66,13 @@ function Header() {
               to="/admin/categories" 
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
-              Kategoriler
+              Categories
             </Link>
             <Link 
               to="/admin/locations" 
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
-              Lokasyonlar
+              Locations
             </Link>
           </div>
         </div>
@@ -87,19 +87,19 @@ function Header() {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="text-primary text-2xl font-bold">
-            İlanlar
+            Classifieds
           </Link>
 
           {/* Masaüstü Menü */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className="text-gray-700 hover:text-primary">
-              Ana Sayfa
+              Home
             </Link>
-            <Link to="/ilanlar" className="text-gray-700 hover:text-primary">
-              İlanlar
+            <Link to="/ads" className="text-gray-700 hover:text-primary">
+              Ads
             </Link>
-            <Link to="/ilanlar" className="text-gray-700 hover:text-primary">
-              Kategoriler
+            <Link to="/ads" className="text-gray-700 hover:text-primary">
+              Categories
             </Link>
             
             {/* Admin paneli linki */}
@@ -107,8 +107,13 @@ function Header() {
             
             {isAuthenticated ? (
               <>
-                <Link to="/ilanlar/yeni" className="flex items-center bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">
-                  <FaPlus className="mr-2" /> İlan Ekle
+                <Link to="/ads/create" className="flex items-center bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">
+                  <FaPlus className="mr-2" /> Post Ad
+                </Link>
+                
+                {/* Mesajlar Butonu */}
+                <Link to="/messages" className="flex items-center text-gray-700 hover:text-primary">
+                  <FaEnvelope className="mr-2" /> Messages
                 </Link>
                 
                 <div className="relative" ref={profileMenuRef}>
@@ -117,32 +122,41 @@ function Header() {
                     onClick={toggleProfileMenu}
                   >
                     <FaUser className="mr-2" /> 
-                    {user?.name || 'Hesabım'} 
+                    {user?.name || 'Account'} 
                     <FaChevronDown className="ml-1" />
                   </button>
                   
                   {isProfileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-20">
                       <Link 
-                        to="/profil" 
+                        to="/profile" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
-                        Profilim
+                        Profile
                       </Link>
                       <Link 
-                        to="/ilanlar" 
+                        to="/ads" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
-                        İlanlarım
+                        My Ads
                       </Link>
                       <Link 
-                        to="/ilanlar/favori" 
+                        to="/favorites" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
-                        Favorilerim
+                        Favorites
+                      </Link>
+                      
+                      {/* Dropdown'a da Mesajlar Link'i ekleyelim */}
+                      <Link 
+                        to="/messages" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <FaEnvelope className="inline mr-2" /> Messages
                       </Link>
                       
                       {isAdmin && (
@@ -151,7 +165,7 @@ function Header() {
                           className="block px-4 py-2 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100"
                           onClick={() => setIsProfileMenuOpen(false)}
                         >
-                          <FaShieldAlt className="inline mr-2" /> Admin Paneli
+                          <FaShieldAlt className="inline mr-2" /> Admin Panel
                         </Link>
                       )}
                       
@@ -162,7 +176,7 @@ function Header() {
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        <FaSignOutAlt className="inline mr-2" /> Çıkış Yap
+                        <FaSignOutAlt className="inline mr-2" /> Logout
                       </button>
                     </div>
                   )}
@@ -170,11 +184,11 @@ function Header() {
               </>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link to="/giris" className="text-gray-700 hover:text-primary">
-                  Giriş Yap
+                <Link to="/login" className="text-gray-700 hover:text-primary">
+                  Login
                 </Link>
-                <Link to="/kayit" className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">
-                  Kayıt Ol
+                <Link to="/register" className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">
+                  Register
                 </Link>
               </div>
             )}
@@ -194,13 +208,13 @@ function Header() {
         {isMenuOpen && (
           <nav className="md:hidden mt-4 space-y-2">
             <Link to="/" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-              Ana Sayfa
+              Home
             </Link>
-            <Link to="/ilanlar" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-              İlanlar
+            <Link to="/ads" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+              Ads
             </Link>
-            <Link to="/ilanlar" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-              Kategoriler
+            <Link to="/ads" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+              Categories
             </Link>
             
             {/* Mobil Admin Panel Linki */}
@@ -210,23 +224,29 @@ function Header() {
                 className="block py-2 font-bold text-blue-700 bg-blue-50 px-2 rounded hover:bg-blue-100" 
                 onClick={toggleMenu}
               >
-                <FaShieldAlt className="inline mr-2" /> Admin Paneli
+                <FaShieldAlt className="inline mr-2" /> Admin Panel
               </Link>
             )}
             
             {isAuthenticated ? (
               <>
-                <Link to="/ilanlar/yeni" className="block py-2 text-primary font-medium" onClick={toggleMenu}>
-                  <FaPlus className="inline mr-2" /> İlan Ekle
+                <Link to="/ads/create" className="block py-2 text-primary font-medium" onClick={toggleMenu}>
+                  <FaPlus className="inline mr-2" /> Post Ad
                 </Link>
-                <Link to="/profil" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-                  Profilim
+                
+                {/* Mobil Menüye Mesajlar linki ekliyoruz */}
+                <Link to="/messages" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                  <FaEnvelope className="inline mr-2" /> Messages
                 </Link>
-                <Link to="/ilanlar" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-                  İlanlarım
+                
+                <Link to="/profile" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                  Profile
                 </Link>
-                <Link to="/ilanlar/favori" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-                  Favorilerim
+                <Link to="/ads" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                  My Ads
+                </Link>
+                <Link to="/favorites" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                  Favorites
                 </Link>
                 
                 <button
@@ -236,16 +256,16 @@ function Header() {
                   }}
                   className="block w-full text-left py-2 text-gray-700 hover:text-primary"
                 >
-                  <FaSignOutAlt className="inline mr-2" /> Çıkış Yap
+                  <FaSignOutAlt className="inline mr-2" /> Logout
                 </button>
               </>
             ) : (
               <>
-                <Link to="/giris" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
-                  Giriş Yap
+                <Link to="/login" className="block py-2 text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                  Login
                 </Link>
-                <Link to="/kayit" className="block py-2 text-primary font-medium" onClick={toggleMenu}>
-                  Kayıt Ol
+                <Link to="/register" className="block py-2 text-primary font-medium" onClick={toggleMenu}>
+                  Register
                 </Link>
               </>
             )}

@@ -1,4 +1,4 @@
-import apiClient from './axiosConfig';
+import apiClient, { setAccessToken, getAccessToken, clearAccessToken } from './axiosConfig';
 import authStorage from './authStorage';
 
 const AUTH_URL = `/Auth`;
@@ -22,10 +22,40 @@ const authService = {
     try {
       const response = await apiClient.post(`${AUTH_URL}/Login`, credentials);
       
-      // Token'ı localStorage'a kaydet, diğer değerler AuthContext tarafından ayarlanacak
+      console.log('Auth Service Login Yanıtı:', response.data);
+      
+      // API response türünü analiz et
+      let token = null;
+      
+      // Farklı yanıt formatlarını kontrol et
       if (response.data && response.data.token) {
-        localStorage.setItem('accessToken', response.data.token);
-        // localStorage isLogin, isAdmin ve userId değerleri AuthContext tarafından ayarlanacak
+        // 1. Format: Direk token alanı
+        token = response.data.token;
+        console.log('Token direk yanıtta bulundu (token alanı)');
+      } 
+      else if (response.data && typeof response.data.data === 'string' && response.data.isSucceeded) {
+        // 2. Format: data alanı direkt string olarak token içeriyor
+        token = response.data.data;
+        console.log('Token data alanında string olarak bulundu');
+      }
+      else if (response.data && response.data.isSucceeded && response.data.data && response.data.data.token) {
+        // 3. Format: API Wrapper: data.token
+        token = response.data.data.token;
+        console.log('Token data.token formatında bulundu');
+      }
+      else if (response.data && response.data.isSucceeded && response.data.data && response.data.data.item && response.data.data.item.token) {
+        // 4. Format: API Wrapper: data.item.token
+        token = response.data.data.item.token;
+        console.log('Token data.item.token formatında bulundu');
+      }
+      
+      // Token varsa belleğe kaydet
+      if (token) {
+        console.log('Token kaydediliyor:', token.substring(0, 20) + '...');
+        setAccessToken(token);
+        authStorage.setIsLogin(true);
+      } else {
+        console.log('Token bulunamadı!');
       }
       
       return response.data;
@@ -38,54 +68,68 @@ const authService = {
   /**
    * Refresh token ile giriş yapar
    * @returns {Promise<boolean>} Giriş başarılı mı?
-   * 
-   * // Başarılı yanıt: 200 OK
-   * // Başarısız yanıt: 400, 404 veya 500
    */
   refreshTokenLogin: async () => {
+    // Kullanıcı login durumunu kontrol et
+    const isLoginActive = authStorage.getIsLogin();
+    
+    // Kullanıcı login değilse, token yenileme işlemini atla
+    if (!isLoginActive) {
+      console.log('refreshTokenLogin: Kullanıcı giriş yapmamış, atlanıyor');
+      return false;
+    }
+    
     try {
+      // API'ye refreshToken isteği gönder
+      console.log('refreshTokenLogin: API isteği gönderiliyor...');
+      
       const response = await apiClient.post(`${AUTH_URL}/RefreshTokenLogin`, {}, {
         withCredentials: true // Cookie'leri göndermek için
       });
       
-      // Token'ı localStorage'a kaydet
-      if (response.data && response.data.token) {
-        localStorage.setItem('accessToken', response.data.token);
-        
-        // authStorage servisini kullanarak kullanıcı bilgilerini kaydet
-        authStorage.setIsLogin(true);
-        
-        // JWT token decode işlemi
-        try {
-          const tokenData = JSON.parse(atob(response.data.token.split('.')[1]));
-          
-          // Admin rolünü kontrol et ve kaydet
-          const isAdmin = tokenData.role && (
-            Array.isArray(tokenData.role) 
-              ? tokenData.role.includes('Admin') 
-              : tokenData.role === 'Admin'
-          );
-          authStorage.setIsAdmin(isAdmin);
-          
-          // Kullanıcı ID'sini kaydet
-          const userId = tokenData.sub || tokenData.userId || tokenData.nameid;
-          if (userId) {
-            authStorage.setUserId(userId);
-          }
-          
-          console.log('Token yenilendi ve bilgiler decode edildi:', { isAdmin, userId });
-        } catch (decodeError) {
-          console.error('Token decode hatası:', decodeError);
-        }
-        
-        return true;
+      // API yanıtını kontrol et 
+      if (!response.data || !response.data.isSucceeded) {
+        console.log('Refresh token başarısız: API başarısız yanıt');
+        // Token ve login durumunu temizle
+        clearAccessToken();
+        authStorage.clear();
+        return false;
       }
       
-      return false;
+      console.log('Refresh token yanıtı başarılı');
+      
+      // Token'ı yanıttan çıkar (token API'de data alanında string olarak geliyor)
+      const token = typeof response.data.data === 'string' ? response.data.data : null;
+      
+      if (!token) {
+        console.log('Refresh token yanıtında token bulunamadı');
+        // Token bulunamadı, login durumunu da temizle
+        clearAccessToken();
+        authStorage.clear();
+        return false;
+      }
+      
+      // Token'ı kaydet (localStorage'a da kaydedilecek)
+      setAccessToken(token);
+      // Login durumunu aktif olarak işaretle
+      authStorage.setIsLogin(true);
+      
+      console.log('Refresh token başarılı, yeni token kaydedildi');
+      
+      return true;
     } catch (error) {
-      console.error('Refresh token ile giriş yapılırken hata:', error);
-      // Hata olsa bile token'ı silme ve giriş durumunu koruma
-      // LocalStorage temizleme işlemini yapma
+      console.error('Refresh token hatası:', error);
+      
+      // 401 hatası alındığında oturum durumunu temizle
+      if (error.response && error.response.status === 401) {
+        console.log('401 Yetkisiz hatası - Oturum bilgileri temizleniyor');
+        clearAccessToken();
+        authStorage.clear();
+      } else {
+        // Diğer hatalarda sadece token temizle
+        clearAccessToken();
+      }
+      
       return false;
     }
   },
@@ -95,52 +139,54 @@ const authService = {
    * @returns {Promise<boolean>} Giriş başarılı mı?
    */
   autoLogin: async () => {
-    // Önce localStorage'da token var mı kontrol et
-    const token = localStorage.getItem('accessToken');
-    const isLogin = localStorage.getItem('isLogin') === 'true';
+    // Mevcut token var mı kontrol et
+    const currentToken = getAccessToken();
     
-    // Eğer token varsa, başka işlem yapma, giriş yapmış kabul et
-    if (token) {
-      console.log('Token bulundu, giriş yapmış kabul ediliyor');
-      
-      // LocalStorage ile uyumlu hale getir
-      if (!isLogin) {
-        authStorage.setIsLogin(true);
-      }
-      
+    // Bellekte token varsa, oturum açık kabul et
+    if (currentToken) {
+      console.log('Bellekte token bulundu, oturum açık');
       return true;
     }
     
-    console.log('Token bulunamadı, refresh token ile giriş deneniyor');
+    // LocalStorage'daki login durumunu kontrol et
+    const isLoginActive = authStorage.getIsLogin();
     
-    // Token yoksa refresh token ile giriş dene
+    // Login aktif değilse refresh token deneme
+    if (!isLoginActive) {
+      console.log('Kullanıcı giriş yapmış, refresh token işlemi atlanıyor');
+      return false;
+    }
+    
+    // Token yoksa VE login aktifse refresh token dene
+    console.log('Bellekte token bulunamadı ancak login aktif, refresh token deneniyor');
     return await authService.refreshTokenLogin();
   },
   
   /**
    * Kullanıcı çıkışı yapar
    * @returns {Promise<Object>} Çıkış sonucu
-   * 
-   * // Başarılı yanıt: 200 OK
-   * // Başarısız yanıt: 400, 401, 404 veya 500
    */
   logout: async () => {
     try {
-      const response = await apiClient.post(`${AUTH_URL}/Logout`);
+      // API'ye logout isteği gönder
+      const response = await apiClient.post(`${AUTH_URL}/Logout`, null, {
+        withCredentials: true
+      });
       
-      // localStorage'dan token'ı temizle
-      localStorage.removeItem('accessToken');
-      
-      // authStorage servisini kullanarak tüm auth verilerini temizle
+      // Her durumda state'leri ve token'ı temizle
+      clearAccessToken();
       authStorage.clear();
       
       return response.data;
     } catch (error) {
       console.error('Çıkış yapılırken hata:', error);
-      // Hata durumunda da token'ı temizle
-      localStorage.removeItem('accessToken');
+      
+      // Hata olsa bile token ve state'leri temizle
+      clearAccessToken();
       authStorage.clear();
-      throw error;
+      
+      // Hata durumunda da başarılı dön, çünkü client tarafında temizledik
+      return { isSucceeded: true, message: 'Çıkış yapıldı (yerel)' };
     }
   },
   
@@ -190,8 +236,8 @@ const authService = {
    * @returns {boolean} Giriş durumu
    */
   isAuthenticated: () => {
-    // authStorage servisini kullanarak kontrol et
-    return authStorage.getIsLogin();
+    // Token ve login durumunu kontrol et
+    return !!getAccessToken() && authStorage.getIsLogin();
   }
 };
 

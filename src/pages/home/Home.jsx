@@ -6,7 +6,7 @@ import locationService from '../../services/locationService';
 import adService from '../../services/adService';
 import SearchBar from '../../components/home/SearchBar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import FeaturedAdCard from '../../components/ad/FeaturedAdCard';
+import AdCard from '../../components/ad/AdCard';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
@@ -58,8 +58,17 @@ const Home = () => {
 
     const fetchFeaturedAds = async () => {
       try {
-        // İstek simülasyonu - API'nin öne çıkan ilanları getiren bir metodu olmalı
-        const response = await adService.getFeaturedAds();
+        // İstek parametreleri - Sadece öne çıkan ilanları getir
+        const featuredParams = {
+          pageNumber: 1,
+          pageSize: 8, // Ana sayfada 8 ilan gösteriliyor
+          sortBy: 'createdAt',
+          isDescending: true,
+          adStatus: 1 // Aktif ilanlar
+        };
+        
+        // Öne çıkan ilanları getir
+        const response = await adService.getFeaturedAds(featuredParams);
         if (response && response.data && response.data.items) {
           setFeaturedAds(response.data.items);
         } else {
@@ -185,7 +194,7 @@ const Home = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {featuredAds.slice(0, 8).map((ad) => (
                 <div key={ad.id}>
-                  <FeaturedAdCard ad={ad} />
+                  <AdCard ad={ad} />
                 </div>
               ))}
             </div>

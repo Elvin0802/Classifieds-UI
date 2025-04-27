@@ -11,11 +11,7 @@ function CreateMainCategory() {
   
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    icon: '',
-    order: 0,
-    isActive: true,
-    categoryId: ''
+    parentCategoryId: ''
   });
 
   // Kategorileri getir
@@ -35,12 +31,10 @@ function CreateMainCategory() {
 
   // Form verilerini güncelle
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const newValue = type === 'checkbox' ? checked : value;
-    
+    const { name, value } = e.target;
     setFormData(prevData => ({
       ...prevData,
-      [name]: newValue
+      [name]: value
     }));
   };
 
@@ -98,8 +92,8 @@ function CreateMainCategory() {
                 <span className="label-text font-medium">Üst Kategori*</span>
               </label>
               <select
-                name="categoryId"
-                value={formData.categoryId}
+                name="parentCategoryId"
+                value={formData.parentCategoryId}
                 onChange={handleChange}
                 className="select select-bordered"
                 required
@@ -116,69 +110,6 @@ function CreateMainCategory() {
                   Ana kategorinin bağlı olacağı üst kategoriyi seçin
                 </span>
               </label>
-            </div>
-            
-            {/* İkon */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">İkon</span>
-              </label>
-              <input
-                type="text"
-                name="icon"
-                value={formData.icon}
-                onChange={handleChange}
-                className="input input-bordered"
-                placeholder="icon-class veya URL"
-              />
-            </div>
-            
-            {/* Sıralama */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Sıralama</span>
-              </label>
-              <input
-                type="number"
-                name="order"
-                value={formData.order}
-                onChange={handleChange}
-                className="input input-bordered"
-                min="0"
-              />
-            </div>
-            
-            {/* Aktif Mi? */}
-            <div className="form-control">
-              <label className="label cursor-pointer justify-start gap-4">
-                <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  className="checkbox checkbox-primary"
-                />
-                <span className="label-text font-medium">Aktif</span>
-              </label>
-              <label className="label mt-2">
-                <span className="label-text-alt text-gray-500">
-                  Ana kategori aktif olarak gösterilsin mi?
-                </span>
-              </label>
-            </div>
-            
-            {/* Açıklama */}
-            <div className="form-control md:col-span-2">
-              <label className="label">
-                <span className="label-text font-medium">Açıklama</span>
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="textarea textarea-bordered h-32"
-                placeholder="Ana kategori ile ilgili açıklama"
-              ></textarea>
             </div>
           </div>
           
