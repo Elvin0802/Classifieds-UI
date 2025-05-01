@@ -4,7 +4,8 @@
 // LocalStorage anahtarları
 const AUTH_KEYS = {
   IS_LOGIN: 'isLogin',
-  IS_ADMIN: 'isAdmin'
+  IS_ADMIN: 'isAdmin',
+  USER_ID: 'userId'
 };
 
 // Yardımcı fonksiyonlar
@@ -65,10 +66,19 @@ const authStorage = {
     return setBooleanItem(AUTH_KEYS.IS_ADMIN, isAdmin);
   },
 
+  // UserId işlemleri
+  getUserId() {
+    return getItem(AUTH_KEYS.USER_ID);
+  },
+  setUserId(userId) {
+    return setItem(AUTH_KEYS.USER_ID, userId);
+  },
+
   // Tüm auth verilerini temizle
   clear() {
     setBooleanItem(AUTH_KEYS.IS_LOGIN, false);
     setBooleanItem(AUTH_KEYS.IS_ADMIN, false);
+    removeItem(AUTH_KEYS.USER_ID);
   }
 };
 

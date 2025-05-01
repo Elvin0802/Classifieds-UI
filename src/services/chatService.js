@@ -328,7 +328,7 @@ const startConnection = async () => {
       if (connectionFailCount >= MAX_CONNECTION_FAILURES) {
         logDebug(`Disabling SignalR after ${MAX_CONNECTION_FAILURES} failed attempts`);
         signalRState = SIGNALR_STATE.DISABLED;
-        toast.error('Gerçek zamanlı mesajlaşma devre dışı bırakıldı. Lütfen sayfayı yenileyin.', {
+        toast.error('Real vaxtda mesajlaşma deaktiv edilib. Səhifəni yeniləyin.', {
           toastId: 'signalr-disabled',
           autoClose: 8000
         });
@@ -433,7 +433,7 @@ const setupEventListeners = () => {
       if (connectionFailCount >= MAX_CONNECTION_FAILURES) {
         logDebug(`Disabling SignalR after ${MAX_CONNECTION_FAILURES} connection errors`);
         signalRState = SIGNALR_STATE.DISABLED;
-        toast.error('Gerçek zamanlı mesajlaşma devre dışı bırakıldı. Lütfen sayfayı yenileyin.', {
+        toast.error('Real vaxtda mesajlaşma deaktiv edilib. Səhifəni yeniləyin.', {
           toastId: 'signalr-disabled',
           autoClose: 8000
         });
@@ -472,7 +472,7 @@ const disableSignalR = () => {
   signalRState = SIGNALR_STATE.DISABLED;
   cleanupConnection();
   notifyConnectionState(false);
-  toast.info('Gerçek zamanlı mesajlaşma devre dışı bırakıldı', {
+  toast.info('Real vaxtda mesajlaşma deaktiv edildi.', {
     toastId: 'signalr-manual-disable',
     autoClose: 3000
   });
@@ -486,7 +486,7 @@ const enableSignalR = () => {
     connectionFailCount = 0;
     lastConnectionAttempt = 0;
     
-    toast.info('Gerçek zamanlı mesajlaşma etkinleştirildi', {
+    toast.info('Real vaxtda mesajlaşma aktiv edildi.', {
       toastId: 'signalr-enable',
       autoClose: 3000
     });
@@ -551,7 +551,7 @@ const chatService = {
     try {
       const response = await apiClient.post(`${CHAT_URL}/CreateChatRoom`, { adId });
       if (response.data && response.data.isSucceeded) {
-        toast.success('Sohbet başlatıldı', { autoClose: 2000 });
+        toast.success('Söhbət başladı', { autoClose: 1000 });
         
         // Sohbet odası oluşturulduğunda bağlantıyı kontrol et
         if (signalRState !== SIGNALR_STATE.DISABLED) {
@@ -561,7 +561,7 @@ const chatService = {
       return response.data;
     } catch (error) {
       console.error('Sohbet odası oluşturulurken hata:', error);
-      toast.error('Sohbet başlatılamadı: ' + (error.response?.data?.message || 'Beklenmeyen bir hata oluştu'));
+      toast.error('Söhbəti Başlatmaq mümkün olmadı: ' + (error.response?.data?.message || 'Gözlənilməz xəta baş verdi'));
       throw error;
     }
   },
@@ -582,7 +582,7 @@ const chatService = {
       return response.data;
     } catch (error) {
       console.error('Sohbet odaları alınırken hata:', error);
-      toast.error('Mesajlar yüklenirken bir hata oluştu');
+      toast.error('Mesajları yükləyərkən xəta baş verdi');
       throw error;
     }
   },
@@ -603,7 +603,7 @@ const chatService = {
       return response.data;
     } catch (error) {
       console.error('Sohbet odası alınırken hata:', error);
-      toast.error('Sohbet bilgileri yüklenirken bir hata oluştu');
+      toast.error('Söhbət məlumatı yüklənərkən xəta baş verdi.');
       throw error;
     }
   },
@@ -619,7 +619,7 @@ const chatService = {
       return response.data;
     } catch (error) {
       console.error('Sohbet mesajları alınırken hata:', error);
-      toast.error('Mesajlar yüklenirken bir hata oluştu');
+      toast.error('Mesajları yükləyərkən xəta baş verdi');
       throw error;
     }
   },
@@ -635,7 +635,7 @@ const chatService = {
       return response.data;
     } catch (error) {
       console.error('İlan sohbet bilgisi alınırken hata:', error);
-      toast.error('İlan mesajlaşma bilgisi alınamadı');
+      toast.error('Elan mesajı məlumatı alınmadı');
       throw error;
     }
   },
@@ -672,7 +672,7 @@ const chatService = {
       });
       
       if (!response.data || !response.data.isSucceeded) {
-        toast.error('Mesaj gönderilemedi: ' + (response.data?.message || 'Sunucu hatası'));
+        toast.error('Mesaj göndərilmədi: ' + (response.data?.message || 'Server xətası'));
         return response.data;
       }
       
@@ -703,7 +703,7 @@ const chatService = {
       return response.data;
     } catch (error) {
       console.error('Mesaj gönderilirken hata:', error);
-      toast.error('Mesaj gönderilemedi: ' + (error.response?.data?.message || 'Bağlantı hatası'));
+      toast.error('Mesaj göndərilmədi: ' + (error.response?.data?.message || 'Bağlantı xətası'));
       throw error;
     }
   },

@@ -30,13 +30,13 @@ function ForgotPassword() {
       if (response.isSucceeded) {
         setEmail(data.email);
         setIsSubmitted(true);
-        toast.success('Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.');
+        toast.success('E-mail ünvanınıza parol sıfırlama linki göndərildi.');
       } else {
-        toast.error(response.message || 'Şifre sıfırlama isteği başarısız oldu.');
+        toast.error(response.message || 'Parolun sıfırlanması sorğusu alınmadı.');
       }
     } catch (error) {
       console.error('Şifre sıfırlama isteği sırasında hata:', error);
-      toast.error(error.response?.data?.message || 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+      toast.error(error.response?.data?.message || 'Xəta baş verdi , təkrar yoxlayın.');
     } finally {
       setIsLoading(false);
     }
@@ -48,19 +48,19 @@ function ForgotPassword() {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-2xl font-bold text-center mb-6 justify-center">
-              Şifremi Unuttum
+            Şifrəmi unutmuşam
             </h2>
             
             {!isSubmitted ? (
               <div>
                 <p className="text-center text-gray-600 mb-6">
-                  E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.
+                E-mail ünvanınızı daxil edin və biz sizə parol sıfırlama linki göndərəcəyik.
                 </p>
                 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text">E-posta</span>
+                      <span className="label-text">E-mail</span>
                     </label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
@@ -68,13 +68,13 @@ function ForgotPassword() {
                       </span>
                       <input
                         type="email"
-                        placeholder="E-posta adresiniz"
+                        placeholder="E-mail"
                         className={`input input-bordered w-full pl-10 ${errors.email ? 'input-error' : ''}`}
                         {...register('email', { 
-                          required: 'E-posta adresi gereklidir', 
+                          required: 'E-mail gərəklidir.', 
                           pattern: {
                             value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: 'Geçerli bir e-posta adresi giriniz'
+                            message: 'Etibarlı e-mail daxil edin'
                           } 
                         })}
                       />
@@ -88,7 +88,7 @@ function ForgotPassword() {
                       className={`btn btn-primary w-full ${isLoading ? 'loading' : ''}`}
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Gönderiliyor...' : 'Şifre Sıfırlama Bağlantısı Gönder'}
+                      {isLoading ? 'Göndərilir...' : 'Parol Sıfırlama Linkini Göndər'}
                     </button>
                   </div>
                 </form>
@@ -96,23 +96,23 @@ function ForgotPassword() {
             ) : (
               <div className="text-center">
                 <div className="bg-success text-white p-3 rounded-lg mb-4">
-                  <p className="font-semibold">Şifre sıfırlama bağlantısı gönderildi!</p>
+                  <p className="font-semibold">Parolun sıfırlanması linki göndərildi!</p>
                   <p className="text-sm mt-2">
-                    <strong>{email}</strong> adresine şifre sıfırlama talimatlarını gönderdik.
+                    <strong>{email}</strong> -a parol sıfırlama təlimatlarını göndərdik.
                   </p>
                 </div>
                 <p className="text-gray-600 mb-4">
-                  Lütfen e-postanızı kontrol edin ve şifrenizi sıfırlamak için bağlantıya tıklayın.
+                Zəhmət olmasa e-poçtunuzu yoxlayın və parolunuzu sıfırlamaq üçün linkə klikləyin.
                 </p>
                 <p className="text-gray-600 text-sm mb-6">
-                  E-posta gelmediyse spam klasörünü kontrol edin veya birkaç dakika bekleyip tekrar deneyin.
+                E-poçtu almamısınızsa, spam qovluğunuzu yoxlayın və ya bir neçə dəqiqə gözləyin və yenidən cəhd edin.
                 </p>
               </div>
             )}
             
             <div className="text-center mt-4">
               <Link to="/giris" className="text-primary hover:underline flex items-center justify-center">
-                <FaArrowLeft className="mr-1" /> Giriş sayfasına dön
+                <FaArrowLeft className="mr-1" /> Giriş səhifəsinə get.
               </Link>
             </div>
           </div>

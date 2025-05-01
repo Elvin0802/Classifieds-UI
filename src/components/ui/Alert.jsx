@@ -1,82 +1,114 @@
 import React from 'react';
 import { FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTimes } from 'react-icons/fa';
+import { cn } from './utils';
 
-// Alert bileşeni - Bildirimler ve uyarılar için
-const Alert = ({ 
-  type = 'info', 
-  title,
-  message, 
-  className = '', 
-  onClose,
-  showIcon = true,
+const AlertContext = React.createContext({});
+
+const Alert = React.forwardRef(({ 
+  children,
+  className,
+  variant = 'info', 
   ...props 
-}) => {
-  // Tip'e göre stiller ve ikonlar
-  const types = {
-    info: {
-      bgColor: 'bg-info/10',
-      borderColor: 'border-info',
-      textColor: 'text-info',
-      icon: FaInfoCircle
-    },
-    success: {
-      bgColor: 'bg-success/10',
-      borderColor: 'border-success',
-      textColor: 'text-success',
-      icon: FaCheckCircle
-    },
-    warning: {
-      bgColor: 'bg-warning/10',
-      borderColor: 'border-warning',
-      textColor: 'text-warning',
-      icon: FaExclamationTriangle
-    },
-    error: {
-      bgColor: 'bg-danger/10',
-      borderColor: 'border-danger',
-      textColor: 'text-danger',
-      icon: FaTimesCircle
-    }
+}, ref) => {
+  // Varyant tipine göre stiller
+  const variantStyles = {
+    info: 'bg-info/10 border-info text-info',
+    success: 'bg-success/10 border-success text-success',
+    warning: 'bg-warning/10 border-warning text-warning',
+    destructive: 'bg-danger/10 border-danger text-danger',
+    default: 'bg-primary/10 border-primary text-primary',
   };
 
-  const { bgColor, borderColor, textColor, icon: Icon } = types[type];
-
-  // Bileşen stili
-  const alertStyle = `
-    flex 
-    items-start 
-    p-4 
-    rounded-lg 
-    border-l-4 
-    ${bgColor} 
-    ${borderColor}
-    ${className}
-  `;
+  const variantStyle = variantStyles[variant] || variantStyles.default;
 
   return (
-    <div className={alertStyle} role="alert" {...props}>
-      {showIcon && (
-        <div className={`flex-shrink-0 ${textColor} mr-3`}>
-          <Icon size={20} />
-        </div>
-      )}
-      
-      <div className="flex-grow">
-        {title && <h4 className={`font-medium ${textColor} text-sm`}>{title}</h4>}
-        {message && <div className="text-gray-600 text-sm mt-1">{message}</div>}
+    <AlertContext.Provider value={{ variant }}>
+      <div
+        ref={ref}
+        role="alert"
+        className={cn(
+          "flex items-start p-4 rounded-lg border-l-4",
+          variantStyle,
+          className
+        )}
+        {...props}
+      >
+        {children}
       </div>
-      
-      {onClose && (
-        <button 
-          onClick={onClose} 
-          className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600"
-          aria-label="Kapat"
-        >
-          <FaTimes size={16} />
-        </button>
+    </AlertContext.Provider>
+  );
+});
+
+Alert.displayName = "Alert";
+
+const AlertTitle = React.forwardRef(({ className, children, ...props }, ref) => {
+  const { variant } = React.useContext(AlertContext);
+  const textColorMap = {
+    info: 'text-info',
+    success: 'text-success',
+    warning: 'text-warning',
+    destructive: 'text-danger',
+    default: 'text-primary',
+  };
+
+  return (
+    <h4
+      ref={ref}
+      className={cn(
+        "font-medium text-sm",
+        textColorMap[variant] || textColorMap.default,
+        className
       )}
+      {...props}
+    >
+      {children}
+    </h4>
+  );
+});
+
+AlertTitle.displayName = "AlertTitle";
+
+const AlertDescription = React.forwardRef(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("text-sm mt-1 text-gray-600", className)}
+    {...props}
+  >
+    {children}
+  </div>
+));
+
+AlertDescription.displayName = "AlertDescription";
+
+const AlertIcon = React.forwardRef(({ type, className, ...props }, ref) => {
+  const { variant } = React.useContext(AlertContext);
+  const typeOrVariant = type || variant;
+  
+  const iconMap = {
+    info: FaInfoCircle,
+    success: FaCheckCircle,
+    warning: FaExclamationTriangle,
+    destructive: FaTimesCircle,
+    default: FaInfoCircle,
+  };
+
+  const Icon = iconMap[typeOrVariant] || iconMap.default;
+  
+  const textColorMap = {
+    info: 'text-info',
+    success: 'text-success',
+    warning: 'text-warning',
+    destructive: 'text-danger',
+    default: 'text-primary',
+  };
+
+  return (
+    <div ref={ref} className={cn("flex-shrink-0 mr-3", textColorMap[typeOrVariant] || textColorMap.default, className)} {...props}>
+      <Icon size={20} />
     </div>
   );
-};
+});
 
-export default Alert; 
+AlertIcon.displayName = "AlertIcon";
+
+export { Alert, AlertTitle, AlertDescription, AlertIcon }; 

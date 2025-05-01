@@ -8,7 +8,7 @@ function AboutPage() {
         
         <div className="text-lg text-gray-700">
           <p className="mb-4">
-            elan.az layihəsi Azərbaycanda özəl elanlar üçün universal meydança təşkil etmək məqsədi ilə yaradılıb
+            elan.az layihəsi Azərbaycanda özəl elanlar üçün universal platforma təşkil etmək məqsədi ilə yaradılıb
           </p>
         </div>
       </div>

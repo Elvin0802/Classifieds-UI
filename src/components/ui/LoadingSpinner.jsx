@@ -1,38 +1,44 @@
-import React from 'react';
+import * as React from "react"
+import { cva } from "class-variance-authority"
 
-const LoadingSpinner = ({ size = 'md', color = 'primary' }) => {
-  // Boyut sınıflarını belirle
-  const sizeClasses = {
-    sm: 'h-6 w-6 border-2',
-    md: 'h-10 w-10 border-3',
-    lg: 'h-16 w-16 border-4',
-    xl: 'h-24 w-24 border-4'
-  };
-  
-  // Renk sınıflarını belirle
-  const colorClasses = {
-    primary: 'border-primary',
-    secondary: 'border-secondary',
-    success: 'border-green-600',
-    danger: 'border-red-600',
-    warning: 'border-yellow-500',
-    info: 'border-blue-500',
-    light: 'border-gray-300',
-    dark: 'border-gray-800'
-  };
-  
+import { cn } from "./utils"
+
+const spinnerVariants = cva(
+  "animate-spin rounded-full border-2 border-current border-t-transparent",
+  {
+    variants: {
+      size: {
+        default: "h-6 w-6",
+        sm: "h-4 w-4",
+        lg: "h-10 w-10",
+        xl: "h-16 w-16",
+      },
+      variant: {
+        default: "text-primary",
+        secondary: "text-secondary",
+        destructive: "text-destructive",
+        muted: "text-muted-foreground",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+      variant: "default",
+    },
+  }
+)
+
+function LoadingSpinner({
+  className,
+  size,
+  variant,
+  ...props
+}) {
   return (
-    <div className="flex items-center justify-center">
-      <div 
-        className={`
-          animate-spin rounded-full 
-          ${sizeClasses[size] || sizeClasses.md} 
-          border-t-transparent border-b-transparent 
-          ${colorClasses[color] || colorClasses.primary}
-        `}
-      />
+    <div className={cn("flex items-center justify-center", className)} {...props}>
+      <div className={cn(spinnerVariants({ size, variant }))} />
     </div>
-  );
-};
+  )
+}
 
-export default LoadingSpinner; 
+export { LoadingSpinner, spinnerVariants }
+export default LoadingSpinner 

@@ -1,9 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { FaUser, FaArrowLeft, FaPaperPlane, FaSpinner, FaTag, FaLiraSign } from 'react-icons/fa';
+import { User, ArrowLeft, Send, Tag, BanknoteIcon, Shield, Info, ChevronRight, MessageCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import chatService from '../../services/chatService';
 import { useAuth } from '../../contexts/AuthContext';
+import authStorage from '../../services/authStorage';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { Badge } from '../../components/ui/badge';
+import { Alert, AlertDescription } from '../../components/ui/Alert';
+import { Separator } from '../../components/ui/separator';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { cn } from '../../components/ui/utils';
 
 function MessageDetail() {
   const { chatRoomId } = useParams();
@@ -21,7 +31,7 @@ function MessageDetail() {
   // Yönlendirme kontrolü - kullanıcı giriş yapmamışsa login sayfasına yönlendir
   useEffect(() => {
     if (!isAuthenticated) {
-      toast.info('Bu sayfayı görüntülemek için giriş yapmalısınız');
+      toast.info('Bu səhifəyə baxmaq üçün daxil olmalısınız.');
       navigate('/login', { state: { from: `/messages/${chatRoomId}` } });
     }
   }, [isAuthenticated, navigate, chatRoomId]);
@@ -52,25 +62,26 @@ function MessageDetail() {
               return;
             }
             
+            // Mesaj formatını düzenle (timestamp eklenmesi)
+            const formattedMessage = {
+              ...message,
+              timestamp: message.createdAt || message.timestamp // API'den gelen createdAt alanını kullan
+            };
+            
             // Mesajın zaten eklenip eklenmediğini kontrol et
             setMessages(prevMessages => {
               // Mesaj ID'si ile aynı ID'ye sahip bir mesaj var mı kontrol et
-              const messageExists = prevMessages.some(m => m.id === message.id);
+              const messageExists = prevMessages.some(m => m.id === formattedMessage.id);
               
               if (messageExists) {
-                console.log('Mesaj zaten mevcut, tekrar eklenmiyor:', message.id);
+                console.log('Mesaj zaten mevcut, tekrar eklenmiyor:', formattedMessage.id);
                 return prevMessages; // Mesajı ekleme, mevcut listeyi döndür
               }
               
               // Mesaj mevcut değilse listeye ekle
-              console.log('Yeni mesaj ekleniyor:', message.id);
+              console.log('Yeni mesaj ekleniyor:', formattedMessage.id);
               
-              // Her zaman chatRoomId ekle
-              const messageToAdd = !message.chatRoomId 
-                ? { ...message, chatRoomId } 
-                : message;
-              
-              return [...prevMessages, messageToAdd];
+              return [...prevMessages, formattedMessage];
             });
             
             // Mesajları okundu olarak işaretle
@@ -133,6 +144,7 @@ function MessageDetail() {
             // API'den gelen mesajlara chatRoomId ekle
             const messagesWithRoomId = (messagesResponse.data.items || []).map(message => ({
               ...message,
+              timestamp: message.createdAt, // timestamp olarak createdAt kullan
               chatRoomId  // Mevcut chatRoomId'yi ekle
             }));
             
@@ -141,15 +153,15 @@ function MessageDetail() {
             // Mesajları okundu olarak işaretle
             await chatService.markMessagesAsRead(chatRoomId);
           } else {
-            setError('Mesajlar yüklenirken bir hata oluştu');
+            setError('Mesajları yükləyərkən xəta baş verdi');
           }
         } else {
-          setError('Sohbet bilgileri alınamadı');
+          setError('Söhbət məlumatını əldə etmək mümkün olmadı');
           navigate('/messages');
         }
       } catch (err) {
         console.error('Sohbet verisi yüklenirken hata:', err);
-        setError('Sohbet verileri yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+        setError('Söhbət məlumatlarını yükləmək alınmadı. Daha sonra yenidən cəhd edin.');
       } finally {
         setIsLoading(false);
       }
@@ -180,14 +192,30 @@ function MessageDetail() {
       
       if (response && response.isSucceeded && response.data) {
         // API'den gelen mesajı kullan (zaten SignalR ile yeni mesaj gelecek)
-        // setMessages([...messages, response.data]);
+        // API yanıtını formatlayarak ekle
+        const sentMessage = {
+          ...response.data,
+          timestamp: response.data.createdAt // timestamp için createdAt kullan
+        };
+        
+        // Mesajı doğrudan eklemiyoruz, SignalR ile gelecek
+        // Ancak signalR gecikmesi veya hata durumları için mesajı ekleyelim
+        setMessages(prevMessages => {
+          // Aynı ID'ye sahip bir mesaj var mı kontrol et
+          const messageExists = prevMessages.some(m => m.id === sentMessage.id);
+          if (messageExists) {
+            return prevMessages;
+          }
+          return [...prevMessages, sentMessage];
+        });
+        
         setNewMessage('');
       } else {
-        toast.error('Mesaj gönderilemedi');
+        toast.error('Mesaj göndərmək mümkün olmadı');
       }
     } catch (err) {
-      console.error('Mesaj gönderilirken hata:', err);
-      toast.error('Mesaj gönderilirken bir hata oluştu');
+      console.error('Mesaj göndərilərkən xəta baş verdi:', err);
+      toast.error('Mesaj göndərilərkən xəta baş verdi');
     } finally {
       setIsSending(false);
     }
@@ -198,23 +226,27 @@ function MessageDetail() {
     if (!dateString) return '';
     
     const date = new Date(dateString);
-    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
   };
   
   const formatDate = (dateString) => {
     if (!dateString) return '';
     
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' });
   };
   
-  // Mesajları tarih bazlı grupla
+  // Mesajları tarihe göre grupla
   const groupMessagesByDate = () => {
     const groups = {};
+    let hasUnreadMessages = false; // Okunmamış mesaj olup olmadığını takip et
     
+    // Önce grupları oluştur
     messages.forEach(message => {
-      const date = new Date(message.createdAt);
-      const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      if (!message.timestamp) return;
+      
+      const date = new Date(message.timestamp);
+      const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD formatı
       
       if (!groups[dateString]) {
         groups[dateString] = [];
@@ -223,171 +255,257 @@ function MessageDetail() {
       groups[dateString].push(message);
     });
     
+    // Her tarih için ilk okunmamış mesajı işaretle
+    Object.keys(groups).forEach(dateString => {
+      const messagesInGroup = groups[dateString];
+      let firstUnreadFound = false;
+      
+      // Tarihe göre sıralı olması için
+      messagesInGroup.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      
+      // İlk okunmamış mesajı işaretle
+      groups[dateString] = messagesInGroup.map(message => {
+        const isMyMessage = isCurrentUserMessage(message.senderId);
+        const isUnread = message.isRead === false;
+        
+        // Sadece diğer kullanıcının gönderdiği okunmamış mesajlar için
+        if (!isMyMessage && isUnread && !firstUnreadFound && !hasUnreadMessages) {
+          firstUnreadFound = true;
+          hasUnreadMessages = true;
+          return { ...message, isFirstUnread: true };
+        }
+        
+        return { ...message, isFirstUnread: false };
+      });
+    });
+    
     return groups;
   };
   
-  // Kullanıcı mesajı mı kontrol et
+  // Mevcut kullanıcı ID'sini al
+  const getCurrentUserId = () => {
+    if (user && user.id) {
+      return user.id;
+    }
+    
+    // Kullanıcı bilgisi yoksa localStorage'dan al
+    const userId = authStorage.getUserId();
+    if (userId) {
+      return userId;
+    }
+    
+    return null;
+  };
+  
+  // Mesaj gönderen mevcut kullanıcı mı kontrol et
   const isCurrentUserMessage = (senderId) => {
-    return user && user.id === senderId;
+    const currentUserId = getCurrentUserId();
+    return currentUserId === senderId;
+  };
+  
+  // Mesajları render et
+  const renderMessages = () => {
+    const groupedMessages = groupMessagesByDate();
+    
+    return Object.keys(groupedMessages).map(dateString => {
+      const formattedDate = formatDate(dateString);
+      
+      return (
+        <div key={dateString} className="mb-6">
+          <div className="flex justify-center mb-4">
+            <Badge variant="outline" className="bg-background">
+              {formattedDate}
+            </Badge>
+          </div>
+          
+          {groupedMessages[dateString].map(message => {
+            const isCurrentUser = isCurrentUserMessage(message.senderId);
+            
+            return (
+              <div key={message.id}>
+                {/* Okunmamış mesajlar için gösterge */}
+                {message.isFirstUnread && (
+                  <div className="flex justify-center my-3">
+                    <Badge variant="outline" className="bg-red-100 text-red-600 border-red-300 flex items-center gap-1 px-3 py-1">
+                      <MessageCircle className="h-3 w-3" /> Oxunmamış mesajlar
+                    </Badge>
+                  </div>
+                )}
+                
+                <div
+                  className={cn(
+                    "mb-3 flex",
+                    isCurrentUser ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <div className={cn(
+                    "max-w-[75%]",
+                    isCurrentUser 
+                      ? "bg-primary text-primary-foreground rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl"
+                      : "bg-muted rounded-tl-2xl rounded-tr-2xl rounded-br-2xl",
+                    "px-4 py-2.5 shadow-sm"
+                  )}>
+                    <div className="text-sm">{message.content}</div>
+                    <div className={cn(
+                      "text-[10px] mt-1 flex justify-end",
+                      isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}>
+                      {formatTime(message.timestamp)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    });
+  };
+  
+  // Diğer kullanıcının bilgilerini getir
+  const getOtherUserInfo = () => {
+    if (!chatRoom) return { userName: 'Naməlum İstifadəçi' };
+    
+    const currentUserId = getCurrentUserId();
+    // Ben alıcı mıyım satıcı mıyım belirle
+    const iAmBuyer = currentUserId === chatRoom.buyerId;
+    
+    return {
+      userId: iAmBuyer ? chatRoom.sellerId : chatRoom.buyerId,
+      userName: iAmBuyer ? chatRoom.sellerName : chatRoom.buyerName,
+      isAdmin: false // API'den bu bilgi gelmiyor, varsayılan olarak false
+    };
   };
   
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="container mx-auto px-4 py-12 flex justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
   
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-        <Link to="/messages" className="btn btn-primary">
-          <FaArrowLeft className="mr-2" /> Mesajlara Dön
-        </Link>
-      </div>
-    );
-  }
-  
-  if (!chatRoom) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-          Sohbet bulunamadı
-        </div>
-        <Link to="/messages" className="btn btn-primary">
-          <FaArrowLeft className="mr-2" /> Mesajlara Dön
-        </Link>
-      </div>
-    );
-  }
-  
-  const groupedMessages = groupMessagesByDate();
+  const otherUser = getOtherUserInfo();
   
   return (
-    <div className="container mx-auto px-4 py-4">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {/* Sohbet Başlığı */}
-        <div className="p-4 border-b flex items-center justify-between bg-gray-50">
-          <div className="flex items-center">
-            <Link to="/messages" className="mr-4 text-gray-500 hover:text-primary">
-              <FaArrowLeft className="text-xl" />
-            </Link>
-            
-            <div>
-              <h1 className="font-medium">{chatRoom.adTitle}</h1>
-              <div className="flex items-center text-sm text-gray-600">
-                <FaTag className="mr-1" />
-                <span>
-                  {chatRoom.adPrice > 0 ? 
-                    new Intl.NumberFormat('tr-TR', {
-                      style: 'currency',
-                      currency: 'TRY',
-                      minimumFractionDigits: 0
-                    }).format(chatRoom.adPrice) : 
-                    'Fiyat belirtilmemiş'}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-right">
-            <div className="text-sm font-medium">
-              {user?.id === chatRoom.buyerId ? chatRoom.sellerName : chatRoom.buyerName}
-            </div>
-            <div className="text-xs text-gray-500">
-              {user?.id === chatRoom.buyerId ? 'Satıcı' : 'Alıcı'}
-            </div>
-          </div>
-        </div>
-        
-        {/* Mesajlar */}
-        <div 
-          className="p-4 h-[calc(100vh-250px)] overflow-y-auto bg-gray-50"
-          ref={messageContainerRef}
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          asChild 
+          className="gap-1 text-muted-foreground"
         >
-          {Object.keys(groupedMessages).length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Henüz mesaj yok. İlk mesajı gönderen siz olun!
-            </div>
-          ) : (
-            Object.entries(groupedMessages).map(([date, dateMessages]) => (
-              <div key={date} className="mb-6">
-                <div className="flex justify-center mb-4">
-                  <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
-                    {formatDate(date)}
-                  </div>
-                </div>
-                
-                {dateMessages.map(message => (
-                  <div 
-                    key={message.id}
-                    className={`flex mb-4 ${isCurrentUserMessage(message.senderId) ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {!isCurrentUserMessage(message.senderId) && (
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                        <FaUser className="text-gray-500 text-sm" />
-                      </div>
-                    )}
-                    
-                    <div 
-                      className={`rounded-lg px-4 py-3 max-w-[75%] ${
-                        isCurrentUserMessage(message.senderId) 
-                          ? 'bg-primary text-white rounded-tr-none' 
-                          : 'bg-white text-gray-800 rounded-tl-none shadow-sm'
-                      }`}
-                    >
-                      <div className="break-words">{message.content}</div>
-                      <div 
-                        className={`text-xs mt-1 text-right ${
-                          isCurrentUserMessage(message.senderId) ? 'text-primary-light' : 'text-gray-500'
-                        }`}
-                      >
-                        {formatTime(message.createdAt)}
-                      </div>
-                    </div>
-                    
-                    {isCurrentUserMessage(message.senderId) && (
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center ml-2 flex-shrink-0">
-                        <FaUser className="text-white text-sm" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {/* Mesaj Gönderme Formu */}
-        <div className="p-4 border-t">
-          <form onSubmit={handleSendMessage} className="flex items-center">
-            <input
-              type="text"
-              className="flex-1 border rounded-lg px-4 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Mesajınızı yazın..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              disabled={isSending}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSending || !newMessage.trim()}
-            >
-              {isSending ? (
-                <FaSpinner className="animate-spin" />
-              ) : (
-                <FaPaperPlane />
-              )}
-            </button>
-          </form>
-        </div>
+          <Link to="/messages">
+            <ArrowLeft className="h-4 w-4" /> Bütün Mesajlar
+          </Link>
+        </Button>
       </div>
+      
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : (
+        <Card className="overflow-hidden">
+          {/* Mesajlaşma Başlığı */}
+          <CardHeader className="py-3 px-4 bg-muted/50 flex flex-row items-center gap-3">
+            <Avatar className="h-10 w-10">
+              {chatRoom.adImageUrl ? (
+                <AvatarImage 
+                  src={chatRoom.adImageUrl} 
+                  alt={otherUser.userName} 
+                />
+              ) : null}
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {otherUser.userName?.charAt(0) || <User className="h-5 w-5" />}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <CardTitle className="text-base flex items-center gap-1">
+                {otherUser.userName || 'Naməlum İstifadəçi'}
+                {otherUser.isAdmin && <Shield className="h-3.5 w-3.5 text-primary ml-1" />}
+              </CardTitle>
+              
+              {chatRoom.adTitle && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                  <Tag className="h-3 w-3" />
+                  <span>Elan: {chatRoom.adTitle}</span>
+                  {chatRoom.adPrice && (
+                    <>
+                      <BanknoteIcon className="h-3 w-3 ml-2" />
+                      <span>{chatRoom.adPrice} AZN</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {chatRoom.adId && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                asChild 
+                className="flex items-center gap-1 text-xs h-8"
+              >
+                <Link to={`/ads/${chatRoom.adId}`}>
+                  <Info className="h-3.5 w-3.5" /> Elana bax <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            )}
+          </CardHeader>
+          
+          <Separator />
+          
+          {/* Mesajlaşma Alanı */}
+          <CardContent 
+            ref={messageContainerRef}
+            className="p-4 h-[400px] overflow-y-auto space-y-4"
+          >
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
+                  <MessageCircle className="h-8 w-8" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground">Mesajlaşmaya başlayın</h3>
+                <p className="text-muted-foreground text-sm max-w-md mt-1">
+                Hələ heç bir mesaj göndərilməyib. Siz dərhal mesaj göndərməyə başlaya bilərsiniz.
+                </p>
+              </div>
+            ) : (
+              renderMessages()
+            )}
+            <div ref={messagesEndRef} />
+          </CardContent>
+          
+          {/* Mesaj Gönderme Alanı */}
+          <CardFooter className="p-3 border-t">
+            <form onSubmit={handleSendMessage} className="flex items-center w-full gap-2">
+              <Input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Mesajınızı yazın..."
+                className="flex-1"
+                disabled={isSending}
+              />
+              <Button 
+                type="submit" 
+                disabled={!newMessage.trim() || isSending}
+                className="gap-1"
+              >
+                {isSending ? (
+                  <LoadingSpinner className="h-4 w-4" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                Gönder
+              </Button>
+            </form>
+          </CardFooter>
+        </Card>
+      )}
     </div>
   );
 }

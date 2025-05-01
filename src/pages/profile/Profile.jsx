@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaKey, FaSave, FaClock, FaCheck, FaTimes, FaCalendarTimes, FaStar, FaEye, FaPen, FaTrash } from 'react-icons/fa';
+import { 
+  User, Key, Save, Clock, CheckCircle, X, CalendarX, Star, Eye, Pencil, Trash, 
+  FileText, Heart, ShieldAlert, Settings, LayoutDashboard, ArrowRight, BookOpen, BadgeAlert
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import profileService from '../../services/profileService';
 import userService from '../../services/userService';
 import authStorage from '../../services/authStorage';
+import { Button } from '../../components/ui/button';
+import { Card, CardHeader, CardContent, CardTitle, CardFooter, CardDescription } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Badge } from '../../components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { Label } from '../../components/ui/label';
+import { Separator } from '../../components/ui/separator';
+import { cn } from '../../components/ui/utils';
 
 const Profile = () => {
   // State tanımlamaları
@@ -33,13 +47,13 @@ const Profile = () => {
           // Şifre değiştirme formuna userId'yi yerleştir
           setPasswordData(prev => ({ ...prev, userId: response.data.item.id }));
         } else {
-          setError('Kullanıcı bilgileri alınamadı');
-          toast.error('Kullanıcı bilgileri alınamadı');
+          setError('İstifadəçi məlumatını əldə etmək mümkün olmadı');
+          toast.error('İstifadəçi məlumatını əldə etmək mümkün olmadı');
         }
       } catch (error) {
-        console.error('Kullanıcı verileri alınırken hata:', error);
-        setError('Kullanıcı bilgileri alınırken bir hata oluştu');
-        toast.error('Kullanıcı bilgileri alınırken bir hata oluştu');
+        console.error('İstifadəçi məlumatı alınarkən xəta:', error);
+        setError('İstifadəçi məlumatı alınarkən xəta baş verdi.');
+        toast.error('İstifadəçi məlumatı alınarkən xəta baş verdi.');
       } finally {
         setLoading(false);
       }
@@ -81,8 +95,8 @@ const Profile = () => {
           setAds([]);
         }
       } catch (error) {
-        console.error('İlanlar alınırken hata:', error);
-        toast.error('İlanlarınız alınırken bir hata oluştu');
+        console.error('Elanları əldə edərkən xəta baş verdi:', error);
+        toast.error('Elanları əldə edərkən xəta baş verdi');
         setAds([]);
       } finally {
         setAdsLoading(false);
@@ -105,14 +119,14 @@ const Profile = () => {
     
     // Şifre kontrolü
     if (passwordData.newPassword !== passwordData.newPasswordConfirm) {
-      setFormError('Yeni şifre ve şifre tekrarı eşleşmiyor');
+      setFormError('Yeni şifrə və təkrar şifrə uyğun gəlmir');
       return;
     }
     
     try {
       const response = await userService.changePassword(passwordData);
       if (response.isSucceeded) {
-        toast.success('Şifreniz başarıyla güncellendi');
+        toast.success('Şifrəniz uğurla yeniləndi.');
         // Formu sıfırla
         setPasswordData(prev => ({
           ...prev,
@@ -121,287 +135,318 @@ const Profile = () => {
           newPasswordConfirm: ''
         }));
       } else {
-        setFormError(response.message || 'Şifre değiştirme işlemi başarısız oldu');
-        toast.error('Şifre değiştirme işlemi başarısız oldu');
+        setFormError(response.message || 'Parolun dəyişdirilməsi uğursuz oldu');
+        toast.error('Parolun dəyişdirilməsi uğursuz oldu');
       }
     } catch (error) {
-      console.error('Şifre değiştirme sırasında hata:', error);
-      setFormError('Şifre değiştirilirken bir hata oluştu');
-      toast.error('Şifre değiştirilirken bir hata oluştu');
+      console.error('Parol dəyişdirilərkən xəta baş verdi:', error);
+      setFormError('Parol dəyişdirilərkən xəta baş verdi');
+      toast.error('Parol dəyişdirilərkən xəta baş verdi');
     }
   };
 
   // İlan durum badgesi için yardımcı fonksiyon
   const getStatusBadge = (ad) => {
     if (ad.isSelected) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><FaStar className="mr-1" /> Seçilmiş</span>;
+      return <Badge variant="secondary" className="flex items-center gap-1"><Heart className="h-3 w-3" /> Seçilmişlərdə</Badge>;
     }
     if (activeTab === 'active') {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><FaCheck className="mr-1" /> Aktif</span>;
+      return <Badge variant="success" className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Aktiv</Badge>;
     }
     if (activeTab === 'pending') {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><FaClock className="mr-1" /> Beklemede</span>;
+      return <Badge variant="outline" className="flex items-center gap-1 border-blue-200 bg-blue-50 text-blue-700"><Clock className="h-3 w-3" /> Gozləyir</Badge>;
     }
     if (activeTab === 'expired') {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"><FaCalendarTimes className="mr-1" /> Süresi Dolmuş</span>;
+      return <Badge variant="outline" className="flex items-center gap-1 border-gray-200 bg-gray-50 text-gray-700"><CalendarX className="h-3 w-3" /> Vaxtı Bitmiş</Badge>;
     }
     if (activeTab === 'rejected') {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><FaTimes className="mr-1" /> Reddedilmiş</span>;
+      return <Badge variant="destructive" className="flex items-center gap-1"><X className="h-3 w-3" /> İmtina Edimiş</Badge>;
     }
     return null;
   };
 
+  // Tarihi formatla
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Az öncə';
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes} dəqiqə öncə`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} saat öncə`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) return `${diffInDays} gün öncə`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) return `${diffInMonths} ay öncə`;
+    
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears} il öncə`;
+  };
+
   if (loading) {
     return (
-      <div className="container mx-auto py-10 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-3">Profil bilgileriniz yükleniyor...</p>
+      <div className="container mx-auto py-10 flex justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+    <div className="container mx-auto py-8 px-4">
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sol Bölüm - Kullanıcı Bilgileri ve Şifre Değiştirme */}
-        <div className="md:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           {/* Kullanıcı Bilgileri Kartı */}
-          <div className="bg-white shadow-md rounded-lg mb-6 overflow-hidden">
-            <div className="bg-primary text-white p-4 font-semibold flex items-center">
-              <FaUser className="mr-2" /> Kullanıcı Bilgileri
-            </div>
-            <div className="p-4">
-              {userData ? (
-                <ul className="divide-y divide-gray-200">
-                  <li className="py-3">
-                    <strong>Ad Soyad:</strong> {userData.name}
-                  </li>
-                  <li className="py-3">
-                    <strong>E-posta:</strong> {userData.email}
-                  </li>
-                  <li className="py-3">
-                    <strong>Telefon:</strong> {userData.phoneNumber}
-                  </li>
-                  <li className="py-3">
-                    <strong>Üyelik Tarihi:</strong> {new Date(userData.createdAt).toLocaleDateString('tr-TR')}
-                  </li>
-                </ul>
-              ) : (
-                <p>Kullanıcı bilgileri bulunamadı.</p>
-              )}
-            </div>
-          </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-center mb-4">
+                <Avatar className="h-24 w-24">
+                  <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                    {userData?.name?.charAt(0) || <User />}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <CardTitle className="text-center text-xl">{userData?.name}</CardTitle>
+              <CardDescription className="text-center">
+                {userData?.isAdmin ? (
+                  <Badge variant="outline" className="flex items-center justify-center gap-1 mx-auto">
+                    <ShieldAlert className="h-3 w-3" /> Admin
+                  </Badge>
+                ) : 'Kullanıcı'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Separator className="my-2" />
+              <div className="space-y-4 mt-4">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-xs text-muted-foreground">E-mail</p>
+                  <p className="font-medium">{userData?.email}</p>
+                </div>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-xs text-muted-foreground">Telefon Nömrəsi</p>
+                  <p className="font-medium">{userData?.phoneNumber || 'Belirtilmemiş'}</p>
+                </div>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-xs text-muted-foreground">Qeydiyyat Tarixi</p>
+                  <p className="font-medium">{userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</p>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" className="w-full gap-1" asChild>
+                <Link to="/profile/edit">
+                  <Settings className="h-4 w-4" /> Edit Profil
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
 
           {/* Şifre Değiştirme Kartı */}
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            <div className="bg-primary text-white p-4 font-semibold flex items-center">
-              <FaKey className="mr-2" /> Şifre Değiştir
-            </div>
-            <div className="p-4">
-              {formError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{formError}</div>}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Key className="h-5 w-5 text-primary" /> Şifrəni Dəyişdir
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {formError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{formError}</AlertDescription>
+                </Alert>
+              )}
               
-              <form onSubmit={handlePasswordSubmit}>
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="oldPassword">
-                    Mevcut Şifre
-                  </label>
-                  <input
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    type="password"
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="oldPassword">Hazırki Şifrə</Label>
+                  <Input
                     id="oldPassword"
                     name="oldPassword"
+                    type="password"
                     value={passwordData.oldPassword}
                     onChange={handlePasswordChange}
                     required
                   />
                 </div>
                 
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="newPassword">
-                    Yeni Şifre
-                  </label>
-                  <input
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    type="password"
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">Yeni Şifrə</Label>
+                  <Input
                     id="newPassword"
                     name="newPassword"
+                    type="password"
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     required
-                    minLength={6}
                   />
                 </div>
                 
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="newPasswordConfirm">
-                    Yeni Şifre (Tekrar)
-                  </label>
-                  <input
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    type="password"
+                <div className="space-y-2">
+                  <Label htmlFor="newPasswordConfirm">Yeni Şifrənin Tekrarı</Label>
+                  <Input
                     id="newPasswordConfirm"
                     name="newPasswordConfirm"
+                    type="password"
                     value={passwordData.newPasswordConfirm}
                     onChange={handlePasswordChange}
                     required
-                    minLength={6}
                   />
                 </div>
                 
-                <button 
-                  type="submit" 
-                  className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center"
-                >
-                  <FaSave className="mr-2" /> Şifreyi Değiştir
-                </button>
+                <Button type="submit" className="w-full gap-1">
+                  <Save className="h-4 w-4" /> Şifrəni Dəyiş
+                </Button>
               </form>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
         
         {/* Sağ Bölüm - İlanlar */}
-        <div className="md:col-span-3">
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            <div className="bg-primary text-white p-4 font-semibold">
-              İlanlarım
-            </div>
-            
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex">
-                <button 
-                  className={`py-4 px-6 font-medium text-sm ${activeTab === 'active' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setActiveTab('active')}
-                >
-                  <FaCheck className="inline mr-1" /> Aktif İlanlar
-                </button>
-                <button 
-                  className={`py-4 px-6 font-medium text-sm ${activeTab === 'pending' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setActiveTab('pending')}
-                >
-                  <FaClock className="inline mr-1" /> Bekleyen İlanlar
-                </button>
-                <button 
-                  className={`py-4 px-6 font-medium text-sm ${activeTab === 'expired' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setActiveTab('expired')}
-                >
-                  <FaCalendarTimes className="inline mr-1" /> Süresi Dolan
-                </button>
-                <button 
-                  className={`py-4 px-6 font-medium text-sm ${activeTab === 'rejected' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setActiveTab('rejected')}
-                >
-                  <FaTimes className="inline mr-1" /> Reddedilen
-                </button>
-                <button 
-                  className={`py-4 px-6 font-medium text-sm ${activeTab === 'selected' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setActiveTab('selected')}
-                >
-                  <FaStar className="inline mr-1" /> Favoriler
-                </button>
-              </nav>
-            </div>
-            
-            {/* İlan İçeriği */}
-            <div className="p-4">
-              {adsLoading ? (
-                <div className="text-center py-6">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-2">İlanlar yükleniyor...</p>
-                </div>
-              ) : ads.length === 0 ? (
-                <div className="text-center py-6 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">Bu kategoride ilan bulunamadı.</p>
-                  <Link to="/ads/create" className="inline-block mt-3 text-primary hover:underline">
-                    Yeni İlan Ekle
-                  </Link>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İlan</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiyat</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {ads.map((ad) => (
-                        <tr key={ad.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" /> Elanlarım
+              </CardTitle>
+              <CardDescription>
+              Bütün elanlarınızı idarə edin, redaktə edin və izləyin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-5 mb-6">
+                  <TabsTrigger value="active" className="flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" /> Aktiv
+                  </TabsTrigger>
+                  <TabsTrigger value="pending" className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" /> Gözləyir
+                  </TabsTrigger>
+                  <TabsTrigger value="expired" className="flex items-center gap-1">
+                    <CalendarX className="h-4 w-4" /> Vaxtı Bitmiş
+                  </TabsTrigger>
+                  <TabsTrigger value="rejected" className="flex items-center gap-1">
+                    <BadgeAlert className="h-4 w-4" /> İmtina Edilmiş
+                  </TabsTrigger>
+                  <TabsTrigger value="selected" className="flex items-center gap-1">
+                    <Heart className="h-4 w-4" /> Seçilmişlər
+                  </TabsTrigger>
+                </TabsList>
+                
+                {["active", "pending", "expired", "rejected", "selected"].map((tab) => (
+                  <TabsContent key={tab} value={tab} className="space-y-4">
+                    {adsLoading ? (
+                      <div className="py-12 flex justify-center">
+                        <LoadingSpinner />
+                      </div>
+                    ) : ads.length === 0 ? (
+                      <div className="py-12 text-center">
+                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-foreground">Elan Tapılmadı</h3>
+                        <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                          {tab === 'active' && 'Aktiv elanınız yoxdur. Yeni elan əlavə etmək istərdinizmi?'}
+                          {tab === 'pending' && 'Təsdiq gozləyən elanınız yoxdur.'}
+                          {tab === 'expired' && 'Vaxtı bitmiş elanınız yoxdur.'}
+                          {tab === 'rejected' && 'İmtina edilmiş elanınız yoxdur.'}
+                          {tab === 'selected' && 'Sevimlilərə əlavə edilmiş elan yoxdur. Siz elanları kəşf edib seçilmişlərə əlavə edə bilərsiniz.'}
+                        </p>
+                        
+                        {tab === 'active' && (
+                          <Button className="mt-4 gap-1" asChild>
+                            <Link to="/ads/create">
+                              <Pencil className="h-4 w-4" /> Yeni Elan Əlavə Et
+                            </Link>
+                          </Button>
+                        )}
+                        
+                        {tab === 'selected' && (
+                          <Button variant="outline" className="mt-4 gap-1" asChild>
+                            <Link to="/ads">
+                              <Eye className="h-4 w-4" /> Elanlara Bax
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {ads.map((ad) => (
+                          <Card key={ad.id} className="overflow-hidden">
+                            <div className="aspect-video relative bg-muted">
                               {ad.mainImageUrl ? (
                                 <img 
-                                  src={ad.mainImageUrl}
-                                  alt={ad.title}
-                                  className="h-10 w-10 rounded-full object-cover mr-3"
+                                  src={ad.mainImageUrl} 
+                                  alt={ad.title} 
+                                  className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="h-10 w-10 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
-                                  <FaUser className="text-gray-400" />
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <FileText className="h-12 w-12 text-muted-foreground" />
                                 </div>
                               )}
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {ad.title}
+                              {getStatusBadge(ad) && (
+                                <div className="absolute top-2 right-2">
+                                  {getStatusBadge(ad)}
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  {ad.categoryName || 'Kategori belirtilmemiş'}
-                                </div>
+                              )}
+                            </div>
+                            
+                            <CardContent className="p-4">
+                              <h3 className="font-semibold text-lg line-clamp-1">{ad.title}</h3>
+                              
+                              <div className="flex justify-between items-center mt-2">
+                                <span className="font-bold text-primary">{ad.price} TL</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(ad.createdAt)}
+                                </span>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(ad.price)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(ad)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(ad.updatedAt || ad.createdAt).toLocaleDateString('tr-TR')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <Link 
-                                to={`/ads/${ad.id}`}
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Görüntüle"
-                              >
-                                <FaEye />
-                              </Link>
-                              {(activeTab === 'active' || activeTab === 'pending') && (
-                                <Link 
-                                  to={`/ads/edit/${ad.id}`}
-                                  className="text-green-600 hover:text-green-900"
-                                  title="Düzenle"
-                                >
-                                  <FaPen />
-                                </Link>
-                              )}
-                              <button
-                                onClick={() => {/* İlan silme işlevi */}}
-                                className="text-red-600 hover:text-red-900"
-                                title="Sil"
-                              >
-                                <FaTrash />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
+                              
+                              <div className="mt-4 flex items-center gap-2">
+                                <Button variant="outline" size="sm" className="flex-1 h-8 gap-1" asChild>
+                                  <Link to={`/ads/${ad.id}`}>
+                                    <Eye className="h-3.5 w-3.5" /> Bax
+                                  </Link>
+                                </Button>
+                                
+                                {activeTab === 'active' && (
+                                  <Button variant="outline" size="sm" className="flex-1 h-8 gap-1" asChild>
+                                    <Link to={`/ads/edit/${ad.id}`}>
+                                      <Pencil className="h-3.5 w-3.5" /> Redaktə et
+                                    </Link>
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {!adsLoading && ads.length > 0 && (
+                      <div className="flex justify-center mt-6">
+                        <Button variant="outline" asChild>
+                          <Link to={`/ads?myAds=${tab}`} className="flex items-center gap-1">
+                            <LayoutDashboard className="h-4 w-4" /> Hamısına Bax <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

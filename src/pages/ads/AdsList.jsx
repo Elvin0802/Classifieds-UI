@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountDown, FaSortAmountUp } from 'react-icons/fa';
+import { Search, Filter, X, SortAsc, SortDesc, ArrowUpDown, Check, CircleX, CirclePlus } from 'lucide-react';
 import AdCard from '../../components/ad/AdCard';
 import Pagination from '../../components/common/Pagination';
 import adService from '../../services/adService';
@@ -9,6 +9,16 @@ import locationService from '../../services/locationService';
 import debounce from 'lodash.debounce';
 import { toast } from 'react-toastify';
 import React from 'react';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Switch } from '../../components/ui/switch';
+import { Separator } from '../../components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from '../../components/ui/sheet';
+import { Card, CardContent } from '../../components/ui/card';
+import { Label } from '../../components/ui/label';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 function AdsList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,7 +84,7 @@ function AdsList() {
           pageNumber: 1,
           pageSize: 12, // Üstte 12 öne çıkan ilan göster
           sortBy: sortBy,
-          isDescending: sortDir === 'desc',
+          isDescending: sortDir === 'desc', // Boolean değer olarak doğrudan gönder
           adStatus: 1, // Aktif ilanlar
           categoryId: selectedCategory || null,
           mainCategoryId: selectedMainCategory || null,
@@ -161,6 +171,11 @@ function AdsList() {
         isFeatured: options.isFeatured === undefined ? (isFeatured === undefined ? false : Boolean(isFeatured)) : Boolean(options.isFeatured),
         adStatus: 1 // Sadece aktif ilanları göster
       };
+
+      // Debugging için log
+      console.log('Arama terimi:', options.searchTerm || searchTerm);
+      console.log('API parametreleri:', apiParams);
+      console.log('Sıralama:', apiParams.sortBy, 'isDescending:', apiParams.isDescending);
 
       // URL parametrelerini güncelle (sadece fetchAds doğrudan çağrıldığında)
       if (!options.skipUrlUpdate) {
@@ -290,7 +305,7 @@ function AdsList() {
   
   // currentPage değiştiğinde ilanları getir
   useEffect(() => {
-    // Sadece sayfa değiştiğinde yeni istekler yap
+    // Sadece sayfa değiştiğinde API'yi çağır
     if (currentPage > 0) {
       fetchAds({ skipUrlUpdate: false });
     }
@@ -317,7 +332,11 @@ function AdsList() {
       
       // Sayfa 1'e dön ve yeni istek gönder
       setCurrentPage(1);
-      fetchAds({ searchTerm: term, currentPage: 1, skipUrlUpdate: true });
+      fetchAds({ 
+        searchTerm: term, 
+        currentPage: 1, 
+        skipUrlUpdate: true 
+      });
     }, 500);
     
     // Komponent unmount edildiğinde debounce fonksiyonunu temizle
@@ -328,23 +347,44 @@ function AdsList() {
     };
   }, [fetchAds, searchParams, setSearchParams]);
 
-  // Arama yapıldığında
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchAds({
-      currentPage: 1, // Arama yaparken her zaman ilk sayfadan başla
-      searchTitle: searchTerm
-    });
-  };
-
   // Arama alanı değiştiğinde
   const handleSearchInput = (e) => {
     const term = e.target.value;
-    setSearchTerm(term);
+    setSearchTerm(term); // State güncellemesi
+    
+    // Değer boşsa anında temizle, debounce kullanma
+    if (!term.trim()) {
+      // URL'den searchTerm parametresini kaldır
+      const updatedParams = new URLSearchParams(searchParams);
+      updatedParams.delete('searchTerm');
+      setSearchParams(updatedParams, { replace: true });
+      
+      // Anında aramaları temizle
+      fetchAds({
+        searchTerm: '', 
+        currentPage: 1,
+      });
+      return;
+    }
     
     // Debounce fonksiyonu ile searchTerm değişimine göre istek gönder
     if (debouncedSearchRef.current) {
       debouncedSearchRef.current(term);
+    }
+  };
+
+  // Arama yapıldığında
+  const handleSearch = (e) => {
+    if (e.key === undefined || e.key === 'Enter') {
+      // Form submit olduğunda veya Enter tuşuna basıldığında
+      e.preventDefault();
+      
+      console.log('Arama yapılıyor:', searchTerm);
+      
+      fetchAds({
+        currentPage: 1, // Arama yaparken her zaman ilk sayfadan başla
+        searchTerm: searchTerm // searchTerm değeri API'ye gönderilecek
+      });
     }
   };
 
@@ -459,239 +499,471 @@ function AdsList() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">İlanlar</h1>
-      
-      {/* Arama ve Filtre Başlığı */}
-      <div className="bg-white shadow-md rounded-lg mb-6">
-        <div className="p-4">
-          <form onSubmit={handleSearch} className="flex flex-wrap gap-2">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg pr-10"
-                  placeholder="İlan ara..."
-                  value={searchTerm}
-                  onChange={handleSearchInput}
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary"
-                >
-                  <FaSearch />
-                </button>
+    <div className="container mx-auto px-4 py-6">
+      {/* Arama ve Filtreleme Başlığı */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-2">
+          <Search className="h-6 w-6 text-primary" /> 
+          İlanlar
+        </h1>
+        <p className="text-muted-foreground">
+          {totalCount} ilan bulundu
+          {searchTerm && ` "${searchTerm}" araması için`}
+          {selectedCategory && categories.find(c => c.id === selectedCategory) && 
+            ` - ${categories.find(c => c.id === selectedCategory).name} kategorisinde`}
+        </p>
+      </div>
+
+      {/* Arama ve Filtreleme Alanı */}
+      <div className="bg-card rounded-lg shadow-sm border border-border p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          {/* Arama Çubuğu */}
+          <div className="flex-1 relative">
+            <form onSubmit={handleSearch} className="w-full relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-muted-foreground" />
               </div>
-            </div>
-            
-            {/* Lokasyon filtresi - Ana arama çubuğunda */}
-            <div className="w-48">
-              <select
-                className="w-full px-3 py-2 border rounded-lg bg-white"
-                value={selectedLocation}
-                onChange={(e) => {
-                  setSelectedLocation(e.target.value);
-                  setTimeout(() => fetchAds(), 0);
-                }}
-              >
-                <option value="">Tüm Konumlar</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.city}, {location.country}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <button
-              type="button"
-              className="btn btn-outline gap-2"
-              onClick={() => setShowFilters(!showFilters)}
+              <Input
+                type="text"
+                placeholder="İlan ara..."
+                value={searchTerm}
+                onChange={handleSearchInput}
+                onKeyDown={handleSearch}
+                className="pl-10 w-full"
+              />
+            </form>
+          </div>
+
+          {/* Mobil ekran için filtreleri göster/gizle butonu */}
+          <div className="flex gap-2 md:hidden">
+            <Button 
+              onClick={() => setShowFilters(true)} 
+              variant="outline" 
+              className="w-full flex items-center gap-2"
             >
-              <FaFilter /> Filtreler
-            </button>
-            
-            <div className="dropdown dropdown-end">
-              <button type="button" className="btn btn-outline gap-2">
-                <FaSort /> Sırala
-              </button>
-              <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
-                <li onClick={() => handleSortChange('createdAt')}>
-                  <a className={`flex items-center justify-between ${sortBy === 'createdAt' ? 'font-bold' : ''}`}>
-                    Tarihe Göre
-                    {sortBy === 'createdAt' && (
-                      sortDir === 'desc' ? <FaSortAmountDown /> : <FaSortAmountUp />
-                    )}
-                  </a>
-                </li>
-                <li onClick={() => handleSortChange('price')}>
-                  <a className={`flex items-center justify-between ${sortBy === 'price' ? 'font-bold' : ''}`}>
-                    Fiyata Göre
-                    {sortBy === 'price' && (
-                      sortDir === 'desc' ? <FaSortAmountDown /> : <FaSortAmountUp />
-                    )}
-                  </a>
-                </li>
-                <li onClick={() => handleSortChange('viewCount')}>
-                  <a className={`flex items-center justify-between ${sortBy === 'viewCount' ? 'font-bold' : ''}`}>
-                    Görüntülenmeye Göre
-                    {sortBy === 'viewCount' && (
-                      sortDir === 'desc' ? <FaSortAmountDown /> : <FaSortAmountUp />
-                    )}
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </form>
+              <Filter className="h-4 w-4" /> Filtreler
+            </Button>
+          </div>
         </div>
-        
-        {/* Filtreler */}
-        {showFilters && (
-          <div className="p-4 border-t">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Kategori Seçimi */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kategori
-                </label>
-                <select
-                  className="w-full px-3 py-2 border rounded-lg bg-white"
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
+
+        {/* Masaüstü için Filtre Alanı */}
+        <div className="hidden md:flex flex-wrap gap-4 mb-4">
+          {/* Kategori Seçimi */}
+          <div className="w-72">
+            <Select 
+              value={selectedCategory || "all"} 
+              onValueChange={(value) => {
+                setSelectedCategory(value === "all" ? "" : value);
+                setSelectedMainCategory(''); // Alt kategoriyi sıfırla
+                // Filtreleri Uygula butonuna tıklandığında uygulanacak
+              }}
+            >
+              <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                <SelectValue placeholder="Kategori Seçin" className="font-medium" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="font-medium">Tüm Kategoriler</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id} className="font-medium">
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Alt Kategori Seçimi - Sadece kategori seçildiğinde göster */}
+          {selectedCategory && mainCategories.length > 0 && (
+            <div className="w-72">
+              <Select 
+                value={selectedMainCategory || "all"} 
+                onValueChange={(value) => setSelectedMainCategory(value === "all" ? "" : value)}
+              >
+                <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                  <SelectValue placeholder="Alt Kategori Seçin" className="font-medium" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="font-medium">Tüm Alt Kategoriler</SelectItem>
+                  {mainCategories.map(category => (
+                    <SelectItem key={category.id} value={category.id} className="font-medium">
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Konum Seçimi */}
+          <div className="w-72">
+            <Select 
+              value={selectedLocation || "all"} 
+              onValueChange={(value) => setSelectedLocation(value === "all" ? "" : value)}
+            >
+              <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                <SelectValue placeholder="Konum Seçin" className="font-medium" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="font-medium">Tüm Konumlar</SelectItem>
+                {locations.map(location => (
+                  <SelectItem key={location.id} value={location.id} className="font-medium">
+                    {location.city}, {location.country}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Fiyat Aralığı */}
+          <div className="w-96 flex gap-2 items-center">
+            <Input
+              type="number"
+              placeholder="Min Fiyat"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="w-1/2"
+            />
+            <span className="text-foreground">-</span>
+            <Input
+              type="number"
+              placeholder="Max Fiyat"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="w-1/2"
+            />
+          </div>
+
+          {/* Sıralama Seçimi */}
+          <div className="w-72">
+            <Select 
+              value={sortBy === 'createdAt' ? (sortDir === 'desc' ? 'createdAt-desc' : 'createdAt-asc') : 
+                      sortBy === 'price' ? (sortDir === 'desc' ? 'price-desc' : 'price-asc') : 'createdAt-desc'} 
+              onValueChange={(value) => {
+                const [newSortBy, newSortDir] = value.split('-');
+                setSortBy(newSortBy);
+                setSortDir(newSortDir);
+                // Sıralama değiştiğinde hemen filtrele
+                fetchAds({ 
+                  sortBy: newSortBy, 
+                  sortDir: newSortDir
+                });
+              }}
+            >
+              <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                <SelectValue placeholder="Sıralama Seçin" className="font-medium" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt-desc" className="font-medium">En Yeni</SelectItem>
+                <SelectItem value="createdAt-asc" className="font-medium">En Eski</SelectItem>
+                <SelectItem value="price-asc" className="font-medium">Fiyat (Düşükten Yükseğe)</SelectItem>
+                <SelectItem value="price-desc" className="font-medium">Fiyat (Yüksekten Düşüğe)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Masaüstü için ek filtreler ve butonlar */}
+        <div className="hidden md:flex justify-between items-center mb-2">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="desktop-isNew"
+                checked={isNew === 'true'}
+                onCheckedChange={(checked) => setIsNew(checked ? 'true' : 'false')}
+              />
+              <Label htmlFor="desktop-isNew" className="cursor-pointer">Sadece Sıfır Ürünler</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="desktop-isFeatured"
+                checked={isFeatured}
+                onCheckedChange={(checked) => setIsFeatured(checked)}
+              />
+              <Label htmlFor="desktop-isFeatured" className="cursor-pointer">Sadece Öne Çıkan İlanlar</Label>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={clearFilters} size="sm" className="flex items-center gap-1">
+              <CircleX className="h-3 w-3" /> Filtreleri Temizle
+            </Button>
+            <Button onClick={applyFilters} size="sm" className="flex items-center gap-1">
+              <Filter className="h-3 w-3" /> Filtreleri Uygula
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobil ekranda filtreler için yan panel */}
+        <Sheet open={showFilters} onOpenChange={setShowFilters}>
+          <SheetContent side="right" className="w-full sm:max-w-lg">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" /> İlan Filtreleri
+              </SheetTitle>
+            </SheetHeader>
+            
+            <div className="py-6 space-y-6">
+              <div className="space-y-3">
+                <Label className="text-foreground">Kategori</Label>
+                <Select 
+                  value={selectedCategory || "all"} 
+                  onValueChange={(value) => {
+                    setSelectedCategory(value === "all" ? "" : value);
                     setSelectedMainCategory('');
                   }}
                 >
-                  <option value="">Tüm Kategoriler</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* Alt Kategori Seçimi */}
-              {selectedCategory && mainCategories.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Alt Kategori
-                  </label>
-                  <select
-                    className="w-full px-3 py-2 border rounded-lg bg-white"
-                    value={selectedMainCategory}
-                    onChange={(e) => setSelectedMainCategory(e.target.value)}
-                  >
-                    <option value="">Tüm Alt Kategoriler</option>
-                    {mainCategories.map((mainCategory) => (
-                      <option key={mainCategory.id} value={mainCategory.id}>
-                        {mainCategory.name}
-                      </option>
+                  <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                    <SelectValue placeholder="Kategori Seçin" className="font-medium" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="font-medium">Tüm Kategoriler</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category.id} value={category.id} className="font-medium">
+                        {category.name}
+                      </SelectItem>
                     ))}
-                  </select>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedCategory && mainCategories.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-foreground">Alt Kategori</Label>
+                  <Select 
+                    value={selectedMainCategory || "all"} 
+                    onValueChange={(value) => setSelectedMainCategory(value === "all" ? "" : value)}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                      <SelectValue placeholder="Alt Kategori Seçin" className="font-medium" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="font-medium">Tüm Alt Kategoriler</SelectItem>
+                      {mainCategories.map(category => (
+                        <SelectItem key={category.id} value={category.id} className="font-medium">
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
-              
-              {/* Fiyat Aralığı */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Fiyat
-                </label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Min Fiyat"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Maksimum Fiyat
-                </label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Max Fiyat"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  min="0"
-                />
-              </div>
-              
-              {/* Durum */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Durum
-                </label>
-                <select
-                  className="w-full px-3 py-2 border rounded-lg bg-white"
-                  value={isNew}
-                  onChange={(e) => setIsNew(e.target.value)}
+
+              <div className="space-y-3">
+                <Label className="text-foreground">Konum</Label>
+                <Select 
+                  value={selectedLocation || "all"} 
+                  onValueChange={(value) => setSelectedLocation(value === "all" ? "" : value)}
                 >
-                  <option value="">Tümü</option>
-                  <option value="true">Yeni</option>
-                  <option value="false">İkinci El</option>
-                </select>
+                  <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                    <SelectValue placeholder="Konum Seçin" className="font-medium" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="font-medium">Tüm Konumlar</SelectItem>
+                    {locations.map(location => (
+                      <SelectItem key={location.id} value={location.id} className="font-medium">
+                        {location.city}, {location.country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              
-              {/* Öne Çıkan İlanlar */}
-              <div className="flex items-center">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="checkbox"
-                    checked={isFeatured}
-                    onChange={(e) => setIsFeatured(e.target.checked)}
+
+              <Separator />
+
+              <div className="space-y-4">
+                <Label className="text-foreground">Fiyat Aralığı</Label>
+                <div className="flex gap-4 items-center">
+                  <Input
+                    type="number"
+                    placeholder="Min"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="w-1/2"
                   />
-                  <span className="text-sm font-medium text-gray-700">Sadece Öne Çıkan İlanlar</span>
-                </label>
+                  <span className="text-foreground">-</span>
+                  <Input
+                    type="number"
+                    placeholder="Max"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="w-1/2"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="isNew" className="text-foreground">Sadece Sıfır Ürünler</Label>
+                  <Switch
+                    id="isNew"
+                    checked={isNew === 'true'}
+                    onCheckedChange={(checked) => setIsNew(checked ? 'true' : 'false')}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="isFeatured" className="text-foreground">Sadece Öne Çıkan İlanlar</Label>
+                  <Switch
+                    id="isFeatured"
+                    checked={isFeatured}
+                    onCheckedChange={(checked) => setIsFeatured(checked)}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <Label className="text-foreground">Sıralama</Label>
+                <Select 
+                  value={sortBy === 'createdAt' ? (sortDir === 'desc' ? 'createdAt-desc' : 'createdAt-asc') : 
+                          sortBy === 'price' ? (sortDir === 'desc' ? 'price-desc' : 'price-asc') : 'createdAt-desc'} 
+                  onValueChange={(value) => {
+                    const [newSortBy, newSortDir] = value.split('-');
+                    setSortBy(newSortBy);
+                    setSortDir(newSortDir);
+                    // Mobil görünümde hemen fetchAds çağrılmıyor, filtreler uygulandığında çağrılacak
+                  }}
+                >
+                  <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
+                    <SelectValue placeholder="Sıralama Seçin" className="font-medium" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdAt-desc" className="font-medium">En Yeni</SelectItem>
+                    <SelectItem value="createdAt-asc" className="font-medium">En Eski</SelectItem>
+                    <SelectItem value="price-asc" className="font-medium">Fiyat (Düşükten Yükseğe)</SelectItem>
+                    <SelectItem value="price-desc" className="font-medium">Fiyat (Yüksekten Düşüğe)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                type="button"
-                className="btn btn-ghost gap-2"
-                onClick={clearFilters}
-              >
-                <FaTimes /> Filtreleri Temizle
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={applyFilters}
-              >
-                Filtreleri Uygula
-              </button>
-            </div>
-          </div>
+
+            <SheetFooter className="flex flex-col sm:flex-row gap-3 mt-4">
+              <Button variant="outline" className="w-full" onClick={clearFilters}>
+                <CircleX className="mr-2 h-4 w-4" /> Filtreleri Temizle
+              </Button>
+              <SheetClose asChild>
+                <Button className="w-full" onClick={applyFilters}>
+                  <Filter className="mr-2 h-4 w-4" /> Filtreleri Uygula
+                </Button>
+              </SheetClose>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Aktif filtreler */}
+      <div className="flex flex-wrap gap-2 mt-3">
+        {searchTerm && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Arama: {searchTerm}
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setSearchTerm('');
+              fetchAds({ searchTerm: '' });
+            }} />
+          </Badge>
+        )}
+        
+        {selectedCategory && categories.find(c => c.id === selectedCategory) && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Kategori: {categories.find(c => c.id === selectedCategory).name}
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setSelectedCategory('');
+              setSelectedMainCategory('');
+              fetchAds({ selectedCategory: '', selectedMainCategory: '' });
+            }} />
+          </Badge>
+        )}
+        
+        {selectedMainCategory && mainCategories.find(c => c.id === selectedMainCategory) && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Alt Kategori: {mainCategories.find(c => c.id === selectedMainCategory).name}
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setSelectedMainCategory('');
+              fetchAds({ selectedMainCategory: '' });
+            }} />
+          </Badge>
+        )}
+        
+        {selectedLocation && locations.find(l => l.id === selectedLocation) && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Konum: {locations.find(l => l.id === selectedLocation).city}, {locations.find(l => l.id === selectedLocation).country}
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setSelectedLocation('');
+              fetchAds({ selectedLocation: '' });
+            }} />
+          </Badge>
+        )}
+        
+        {(minPrice || maxPrice) && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Fiyat: {minPrice || '0'} TL - {maxPrice || '∞'} TL
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setMinPrice('');
+              setMaxPrice('');
+              fetchAds({ minPrice: '', maxPrice: '' });
+            }} />
+          </Badge>
+        )}
+        
+        {isNew === 'true' && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Sadece Sıfır Ürünler
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setIsNew('');
+              fetchAds({ isNew: '' });
+            }} />
+          </Badge>
+        )}
+        
+        {isFeatured && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Sadece Öne Çıkan İlanlar
+            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
+              setIsFeatured(false);
+              fetchAds({ isFeatured: false });
+            }} />
+          </Badge>
         )}
       </div>
-      
-      {/* Öne Çıkan İlanlar Bölümü */}
-      {!isFeatured && featuredAds.length > 0 && (
-        <div className="mb-8">
-          <div className="border-b pb-2 mb-4">
-            <h2 className="text-xl font-semibold">Öne Çıkan İlanlar</h2>
+
+      {/* Öne Çıkan İlanlar */}
+      {!isFeaturedLoading && featuredAds.length > 0 && !isFeatured && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <CirclePlus className="h-5 w-5 text-primary" /> Öne Çıkan İlanlar
+            </h2>
           </div>
           
           {isFeaturedLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="flex justify-center py-12">
+              <LoadingSpinner />
             </div>
           ) : featuredError ? (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {featuredError}
-            </div>
+            <Card className="bg-destructive/10 border-destructive/20">
+              <CardContent className="p-4 text-center text-destructive">
+                {featuredError}
+              </CardContent>
+            </Card>
+          ) : featuredAds.length === 0 ? (
+            <Card>
+              <CardContent className="p-4 text-center text-muted-foreground">
+                Öne çıkan ilan bulunamadı.
+              </CardContent>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {featuredAds.map((ad) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {featuredAds.map(ad => (
                 <AdCard 
                   key={ad.id} 
-                  ad={ad}
+                  ad={ad} 
+                  isFavorite={favoriteAds.includes(ad.id)}
                   onFavoriteToggle={() => handleFavoriteToggle(ad.id)}
                 />
               ))}
@@ -699,65 +971,60 @@ function AdsList() {
           )}
         </div>
       )}
-      
-      {/* Tüm İlanlar veya Filtrelenmiş İlanlar */}
-      <div>
-        <div className="border-b pb-2 mb-4">
-          <h2 className="text-xl font-semibold">
-            {isFeatured ? 'Öne Çıkan İlanlar' : 'İlanlar'}
-            {totalCount > 0 && ` (${totalCount})`}
-          </h2>
+
+      {/* Normal İlanlar */}
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <LoadingSpinner size="lg" />
         </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      ) : error ? (
+        <Card className="bg-destructive/10 border-destructive/20">
+          <CardContent className="p-6 text-center text-destructive">
             {error}
-          </div>
-        ) : ads.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-lg text-gray-600">Aranan kriterlere uygun ilan bulunamadı.</p>
-            <button
-              onClick={clearFilters}
-              className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
-            >
-              Filtreleri Temizle
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {ads.map((ad) => (
-                <AdCard 
-                  key={ad.id} 
-                  ad={ad}
-                  onFavoriteToggle={() => handleFavoriteToggle(ad.id)}
-                />
-              ))}
-            </div>
-            
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+          </CardContent>
+        </Card>
+      ) : ads.length === 0 ? (
+        <Card className="border-border bg-card">
+          <CardContent className="p-12 text-center">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <CircleX className="h-16 w-16 text-muted-foreground" />
+              <div>
+                <h3 className="text-lg font-medium text-foreground mb-1">Sonuç Bulunamadı</h3>
+                <p className="text-muted-foreground">
+                  Arama kriterlerinize uygun ilan bulunamadı. Filtreleri değiştirerek tekrar deneyin.
+                </p>
               </div>
-            )}
-          </>
-        )}
-      </div>
-      
-      {/* Yeni İlan Ekleme */}
-      <div className="fixed bottom-8 right-8">
-        <Link to="/ilanlar/yeni" className="btn btn-primary rounded-full shadow-lg btn-lg">
-          + Yeni İlan Ekle
-        </Link>
-      </div>
+              <Button onClick={clearFilters} variant="outline" className="mt-2">
+                Filtreleri Temizle
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {ads.map(ad => (
+              <AdCard 
+                key={ad.id} 
+                ad={ad} 
+                isFavorite={favoriteAds.includes(ad.id)}
+                onFavoriteToggle={() => handleFavoriteToggle(ad.id)}
+              />
+            ))}
+          </div>
+          
+          {/* Sayfalama */}
+          {totalPages > 1 && (
+            <Pagination
+              totalItems={totalCount}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+              className="mt-8"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

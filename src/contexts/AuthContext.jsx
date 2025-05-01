@@ -57,9 +57,11 @@ export const AuthProvider = ({ children }) => {
     
     // LocalStorage'ı temizle
     authStorage.clear();
+    // userId'yi de temizle
+    authStorage.setUserId(null);
     
     // Kullanıcıya bildirim göster
-    toast.error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
+    toast.error('Sessiyanız dayandırıldı. Zəhmət olmasa yenidən daxil olun.');
     
     // Login sayfasına yönlendir
     navigate('/login', { state: { from: window.location.pathname }, replace: true });
@@ -74,6 +76,7 @@ export const AuthProvider = ({ children }) => {
         const userData = profileResponse.data.item;
         setUser(userData);
         setUserId(userData.id);
+        authStorage.setUserId(userData.id); // localStorage'a yaz
         setIsAdmin(userData.isAdmin);
         authStorage.setIsAdmin(userData.isAdmin);
         console.log('Kullanıcı profil bilgileri başarıyla alındı');
@@ -111,7 +114,11 @@ export const AuthProvider = ({ children }) => {
       try {
         // LocalStorage'dan login durumunu kontrol et
         const storedIsLogin = authStorage.getIsLogin();
-        
+        // userId'yi localStorage'dan al
+        const storedUserId = authStorage.getUserId();
+        if (!userId && storedUserId) {
+          setUserId(storedUserId);
+        }
         // Token kontrol et
         const token = getAccessToken();
         
@@ -130,6 +137,7 @@ export const AuthProvider = ({ children }) => {
           setIsAdmin(false);
           setUser(null);
           setUserId(null);
+          authStorage.setUserId(null); // localStorage'dan da sil
           
           // LocalStorage'da login var ama token yoksa, localStorage'ı da temizle
           if (storedIsLogin && !token) {
@@ -151,6 +159,39 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           setIsAdmin(authStorage.getIsAdmin());
           
+          // userId localStorage'dan alınmışsa state'e yaz
+          if (!userId && storedUserId) {
+            setUserId(storedUserId);
+          }
+          
+          // Sayfa yenilendiğinde kullanıcı verilerini API'den getir
+          try {
+            console.log('Sayfa yenilendiğinde kullanıcı verilerini getiriliyor...');
+            const profileResponse = await profileService.getUserData();
+            
+            if (profileResponse && profileResponse.isSucceeded && profileResponse.data?.item) {
+              const userData = profileResponse.data.item;
+              console.log('Kullanıcı verileri başarıyla alındı:', userData);
+              
+              // Kullanıcı verilerini state'e ayarla
+              setUser(userData);
+              setUserId(userData.id);
+              authStorage.setUserId(userData.id); // localStorage'a yaz
+              setIsAdmin(userData.isAdmin);
+              authStorage.setIsAdmin(userData.isAdmin);
+            } else {
+              console.log('Kullanıcı verileri alınamadı veya API yanıtı başarısız');
+            }
+          } catch (profileError) {
+            console.error('Sayfa yenilendiğinde kullanıcı verileri alınırken hata:', profileError);
+            
+            // 401 hatası durumunda oturumu sonlandır
+            if (profileError.response && profileError.response.status === 401) {
+              console.log('Kullanıcı verilerini getirirken 401 hatası, oturum sonlandırılıyor');
+              handleForceLogout();
+            }
+          }
+          
           // İşlem tamamlandı
           isAuthCheckInProgress = false;
           setLoading(false);
@@ -163,6 +204,7 @@ export const AuthProvider = ({ children }) => {
         setIsAdmin(false);
         setUser(null);
         setUserId(null);
+        authStorage.setUserId(null); // localStorage'dan da sil
         
         // Ayrıca localStorage'ı da temizle
         authStorage.clear();
@@ -211,12 +253,9 @@ export const AuthProvider = ({ children }) => {
       if (response.isSucceeded && response.data?.item) {
         const userData = response.data.item;
         setUser(userData);
-        
-        // ID ve admin durumunu güncelle
         setUserId(userData.id);
+        authStorage.setUserId(userData.id); // localStorage'a yaz
         setIsAdmin(userData.isAdmin);
-        
-        // Storage'ı güncelle (sadece admin bilgisi)
         authStorage.setIsAdmin(userData.isAdmin);
       }
     } catch (error) {
@@ -265,6 +304,7 @@ export const AuthProvider = ({ children }) => {
         
         setIsAdmin(isUserAdmin);
         setUserId(userIdFromToken);
+        authStorage.setUserId(userIdFromToken); // localStorage'a yaz
         
         // Admin durumunu kaydet
         authStorage.setIsAdmin(isUserAdmin);
@@ -280,6 +320,7 @@ export const AuthProvider = ({ children }) => {
             // Kullanıcı verilerini state'e ayarla
             setUser(userData);
             setUserId(userData.id);
+            authStorage.setUserId(userData.id); // localStorage'a yaz
             setIsAdmin(userData.isAdmin);
             
             // Admin bilgisini güncelle
@@ -295,13 +336,13 @@ export const AuthProvider = ({ children }) => {
       // Başarısız durum
       return { 
         success: false, 
-        message: response?.message || 'Giriş başarısız.' 
+        message: response?.message || 'Giriş uğursuz oldu.' 
       };
     } catch (error) {
       console.error('Giriş sırasında hata:', error);
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Giriş işlemi sırasında bir hata oluştu.' 
+        message: error.response?.data?.message || 'Giriş prosesində xəta baş verdi.' 
       };
     }
   };
@@ -314,6 +355,7 @@ export const AuthProvider = ({ children }) => {
       setIsAdmin(false);
       setUser(null);
       setUserId(null);
+      authStorage.setUserId(null); // localStorage'dan da sil
       return { success: true };
     } catch (error) {
       console.error('Çıkış sırasında hata:', error);
@@ -322,9 +364,10 @@ export const AuthProvider = ({ children }) => {
       setIsAdmin(false);
       setUser(null);
       setUserId(null);
+      authStorage.setUserId(null); // localStorage'dan da sil
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Çıkış işlemi sırasında bir hata oluştu.' 
+        message: error.response?.data?.message || 'Çıxış zamanı xəta baş verdi.' 
       };
     }
   };

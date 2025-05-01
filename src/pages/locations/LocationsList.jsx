@@ -22,7 +22,7 @@ const LocationsList = () => {
         }
       } catch (err) {
         console.error('Lokasyonlar yüklenirken hata:', err);
-        setError('Lokasyonlar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+        setError('Məkanları yükləyərkən xəta baş verdi. Lütfən, sonra yenidən cəhd edin.');
       } finally {
         setLoading(false);
       }
@@ -57,7 +57,7 @@ const LocationsList = () => {
     return (
       <div className="py-5 text-center container mx-auto">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent">
-          <span className="sr-only">Yükleniyor...</span>
+          <span className="sr-only">Yüklənir...</span>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ const LocationsList = () => {
 
   return (
     <div className="py-4 container mx-auto">
-      <h1 className="mb-4 text-2xl font-bold">Lokasyonlar</h1>
+      <h1 className="mb-4 text-2xl font-bold">Məkanlar</h1>
       
       {/* Arama kutusu */}
       <div className="mb-4 bg-white rounded-lg shadow p-4">
@@ -87,7 +87,7 @@ const LocationsList = () => {
               </div>
               <input
                 type="text"
-                placeholder="Şehir ara..."
+                placeholder="Məkan axtar..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -98,7 +98,7 @@ const LocationsList = () => {
                 className="ml-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
                 onClick={() => setSearchTerm('')}
               >
-                Temizle
+                Təmizlə
               </button>
             )}
           </div>
@@ -108,7 +108,7 @@ const LocationsList = () => {
       {/* Lokasyon listesi */}
       {filteredLocations.length === 0 ? (
         <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">
-          Arama kriterlerinize uygun lokasyon bulunamadı.
+          Axtarış kriteriyalarınıza uyğun məkan tapılmadı.
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -124,7 +124,7 @@ const LocationsList = () => {
                   </h3>
                   {location.adCount !== undefined && (
                     <p className="text-gray-500 text-sm">
-                      {location.adCount} ilan
+                      {location.adCount} elan
                     </p>
                   )}
                 </div>
@@ -133,7 +133,7 @@ const LocationsList = () => {
                     to={`/ads?locationId=${location.id}`} 
                     className="block w-full text-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 text-sm transition-colors"
                   >
-                    İlanları Gör
+                    Elanlara Bax
                   </Link>
                 </div>
               </div>

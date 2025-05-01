@@ -27,8 +27,8 @@ const CategoriesList = () => {
           setCategories(categoriesWithChildren);
         }
       } catch (err) {
-        console.error('Kategoriler yüklenirken hata:', err);
-        setError('Kategoriler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+        console.error('Kateqoriyaları yüklenirken hata:', err);
+        setError('Kateqoriyaları yükləyərkən xəta baş verdi. Daha sonra yenidən cəhd edin.');
       } finally {
         setLoading(false);
       }
@@ -49,7 +49,7 @@ const CategoriesList = () => {
     return (
       <div className="text-center py-5 container mx-auto">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent">
-          <span className="sr-only">Yükleniyor...</span>
+          <span className="sr-only">Yüklənir...</span>
         </div>
       </div>
     );
@@ -67,7 +67,7 @@ const CategoriesList = () => {
 
   return (
     <div className="py-4 container mx-auto">
-      <h1 className="mb-4 text-2xl font-bold">Kategoriler</h1>
+      <h1 className="mb-4 text-2xl font-bold">Kateqoriyalar</h1>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map((category) => (
@@ -84,7 +84,7 @@ const CategoriesList = () => {
                   {category.name} 
                   {category.adCount !== undefined && (
                     <span className="ml-2 text-sm text-gray-500">
-                      ({category.adCount} ilan)
+                      ({category.adCount} elan)
                     </span>
                   )}
                 </h2>
@@ -111,7 +111,7 @@ const CategoriesList = () => {
                             {subCategory.name}
                             {subCategory.adCount !== undefined && (
                               <span className="ml-2 text-sm text-gray-500">
-                                ({subCategory.adCount} ilan)
+                                ({subCategory.adCount} elan)
                               </span>
                             )}
                           </span>
@@ -129,7 +129,7 @@ const CategoriesList = () => {
                 to={`/ads?categoryId=${category.id}`}
                 className="block w-full text-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 text-sm transition-colors"
               >
-                Bu kategoride ilanları gör
+                Bu kateqoriyadakı elanlara baxın
               </Link>
             </div>
           </div>

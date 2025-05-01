@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaMapMarkerAlt } from 'react-icons/fa';
+import { Search, MapPin, ChevronDown } from 'lucide-react';
 import locationService from '../../services/locationService';
-import { TextField, FormControl, InputLabel, Select, MenuItem, Button, InputAdornment, Box, Paper, CircularProgress } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { Button } from '../ui/button';
+import { cn } from '../ui/utils';
 
-const SearchBar = () => {
+const SearchBar = ({ categories, locations: propLocations }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [locations, setLocations] = useState([]);
+  const [locations, setLocations] = useState(propLocations || []);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (propLocations && propLocations.length > 0) {
+      setLocations(propLocations);
+      return;
+    }
+    
     const fetchLocations = async () => {
       setLoading(true);
       try {
@@ -29,7 +34,7 @@ const SearchBar = () => {
     };
 
     fetchLocations();
-  }, []);
+  }, [propLocations]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -47,88 +52,86 @@ const SearchBar = () => {
     navigate(`/ads?${params.toString()}`);
   };
 
+  // Seçilen lokasyonu bul
+  const selectedLocationName = locations.find(loc => loc.id === selectedLocation)
+    ? `${locations.find(loc => loc.id === selectedLocation).city}`
+    : 'Hamısı';
+
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-      <Box component="form" onSubmit={handleSearch} sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', md: 'row' }, 
-        gap: 2,
-        alignItems: 'center' 
-      }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Ne aramıştınız?"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="primary" />
-              </InputAdornment>
-            ),
-          }}
-        />
+    <form onSubmit={handleSearch} className="bg-white shadow-xl rounded-xl p-3 md:p-2 w-full max-w-4xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Ne aramıştınız?"
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900 placeholder-gray-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
         
-        <FormControl sx={{ minWidth: { xs: '100%', md: 240 } }}>
-          <InputLabel id="location-select-label" sx={{ color: 'primary.main' }}>Konum</InputLabel>
-          <Select
-            labelId="location-select-label"
-            id="location-select"
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            label="Konum"
-            sx={{ 
-              color: 'text.primary',
-              '& .MuiSelect-select': { 
-                color: 'text.primary',
-                fontWeight: 'medium',
-                backgroundColor: 'white' 
-              },
-              '& .MuiMenuItem-root': {
-                color: 'text.primary'
-              }
-            }}
-            startAdornment={
-              <InputAdornment position="start">
-                <LocationOnIcon color="primary" />
-              </InputAdornment>
-            }
-          >
-            <MenuItem value="" sx={{ color: 'text.primary' }}>Tüm Türkiye</MenuItem>
-            {loading ? (
-              <MenuItem disabled>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                  Yükleniyor...
-                </Box>
-              </MenuItem>
-            ) : (
-              locations.map((location) => (
-                <MenuItem key={location.id} value={location.id} sx={{ color: 'text.primary', fontWeight: 'normal' }}>
-                  {location.city}, {location.country}
-                </MenuItem>
-              ))
+        <div className="relative">
+          <div className="relative">
+            <button
+              type="button"
+              className="flex items-center justify-between w-full md:w-48 px-3 py-3 bg-white border border-gray-300 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-primary"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <div className="flex items-center">
+                <MapPin className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="text-gray-900 truncate">{selectedLocationName}</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-500 ml-2" />
+            </button>
+            
+            {isDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg overflow-auto border border-gray-200">
+                <div className="py-1">
+                  <button
+                    type="button"
+                    className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-100"
+                    onClick={() => {
+                      setSelectedLocation('');
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    Tüm Türkiye
+                  </button>
+                  
+                  {loading ? (
+                    <div className="px-4 py-2 text-gray-500">Yüklənir...</div>
+                  ) : (
+                    locations.map((location) => (
+                      <button
+                        key={location.id}
+                        type="button"
+                        className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-100"
+                        onClick={() => {
+                          setSelectedLocation(location.id);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        {location.city}, {location.country}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
             )}
-          </Select>
-        </FormControl>
+          </div>
+        </div>
         
         <Button 
           type="submit" 
-          variant="contained" 
-          color="primary" 
-          size="large"
-          startIcon={<SearchIcon />}
-          sx={{ 
-            minWidth: { xs: '100%', md: 'auto' },
-            py: 1.5,
-            px: 3
-          }}
+          className="flex-shrink-0 py-3 px-6"
         >
-          Ara
+          <Search className="h-5 w-5 mr-2" /> Axtar
         </Button>
-      </Box>
-    </Paper>
+      </div>
+    </form>
   );
 };
 

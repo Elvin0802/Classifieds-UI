@@ -1,22 +1,28 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useContext } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { AuthContext } from '../../contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 // Yalnızca giriş yapmış kullanıcılar için erişim sağlayan route
-function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useContext(AuthContext);
+  const location = useLocation();
   
-  // Yükleme durumunda bekletme yapabiliriz
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Yükleniyor...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+        <span className="sr-only">Yükleniyor...</span>
+      </div>
+    );
   }
   
-  // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
   if (!isAuthenticated) {
-    return <Navigate to="/giris" replace />;
+    // Redirect to login page with return path
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   
-  // Giriş yapmışsa alt route'ları göster
-  return <Outlet />;
-}
+  return children;
+};
 
 export default ProtectedRoute; 

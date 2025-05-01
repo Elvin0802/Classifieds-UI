@@ -14,23 +14,6 @@ export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 // Sayfalama ayarları
 export const DEFAULT_PAGE_SIZE = 10;
 
-// İlan bildirme nedenleri
-export const REPORT_REASONS = [
-  'Yanıltıcı bilgi veya dolandırıcılık',
-  'Yasaklı ürün veya hizmet',
-  'Uygunsuz veya rahatsız edici içerik',
-  'Telif hakkı ihlali',
-  'Aynı ilan birden fazla kez yayınlanmış',
-  'Diğer'
-];
-
-// Ödeme yöntemleri
-export const PAYMENT_METHODS = [
-  { id: 1, name: 'Kredi Kartı' },
-  { id: 2, name: 'Havale/EFT' },
-  { id: 3, name: 'Kapıda Ödeme' }
-];
-
 // Uygulama tema renkleri
 export const THEME_COLORS = {
   primary: '#1e88e5',

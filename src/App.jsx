@@ -22,6 +22,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import AdsList from './pages/ads/AdsList';
 import AdDetail from './pages/ads/AdDetail';
 import CreateAd from './pages/ads/CreateAd';
+import EditAd from './pages/ads/EditAd';
 import Profile from './pages/profile/Profile';
 import SelectedAds from './pages/ads/SelectedAds';
 import NotFound from './pages/NotFound';
@@ -45,7 +46,8 @@ import CreateCategory from './pages/admin/categories/CreateCategory';
 import AdminLocations from './pages/admin/locations/AdminLocations';
 import CreateLocation from './pages/admin/locations/CreateLocation';
 import AdminPendingAds from './pages/admin/ads/AdminPendingAds';
-// import AdminReports from './pages/admin/reports/AdminReports';
+import ReportsList from './pages/admin/reports/ReportsList';
+import ReportDetail from './pages/admin/reports/ReportDetail';
 
 // Services
 import authService from './services/authService';
@@ -65,7 +67,7 @@ const PrivateRoute = ({ children }) => {
   }
   
   if (!isAuthenticated) {
-    toast.error('Bu sayfayı görüntülemek için giriş yapmalısınız');
+    toast.error('Bu səhifəyə baxmaq üçün daxil olmalısınız.');
     return <Navigate to="/login" state={{ from: window.location.pathname }} />;
   }
   
@@ -97,13 +99,13 @@ const AdminRoute = ({ children }) => {
   // Kimlik doğrulaması yapılmamışsa login sayfasına yönlendir
   if (!isAuthenticated && !token) {
     console.log('AdminRoute - Kimlik doğrulama başarısız');
-    toast.error('Bu sayfayı görüntülemek için giriş yapmalısınız');
+    toast.error('Bu səhifəyə baxmaq üçün daxil olmalısınız.');
     return <Navigate to="/login" state={{ from: window.location.pathname }} />;
   }
   
   // Kullanıcı giriş yapmış ama admin değilse ana sayfaya yönlendir
   console.log('AdminRoute - Admin yetkisi yok');
-  toast.error('Bu sayfayı görüntülemek için yetkiniz bulunmamaktadır');
+  toast.error('Bu səhifəyə baxmağa icazəniz yoxdur.');
   return <Navigate to="/" />;
 };
 
@@ -292,6 +294,15 @@ function AppContent() {
             <Navigate to="/ads/create" replace />
           } />
           
+          <Route path="/ads/edit/:id" element={
+            <PrivateRoute>
+              <EditAd />
+            </PrivateRoute>
+          } />
+          <Route path="/ilanlar/duzenle/:id" element={
+            <Navigate to={`/ads/edit/${window.location.pathname.split('/').pop()}`} replace />
+          } />
+          
           <Route path="/profile" element={
             <PrivateRoute>
               <Profile />
@@ -331,13 +342,14 @@ function AppContent() {
           <Route path="ads/pending" element={<AdminPendingAds />} />
           
           {/* Reports Management Routes */}
-          {/* <Route path="reports" element={<AdminReports />} /> */}
+          <Route path="reports" element={<ReportsList />} />
+          <Route path="reports/:id" element={<ReportDetail />} />
           
           {/* Admin 404 Route */}
-          <Route path="*" element={<div className="p-6"><h1 className="text-2xl font-bold text-center">404 - Admin Page Not Found</h1></div>} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={1200} />
     </>
   );
 }

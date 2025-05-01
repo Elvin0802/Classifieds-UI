@@ -1,114 +1,143 @@
 import React from 'react';
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { cn } from '../ui/utils';
+import { Button } from '../ui/button';
 
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-  // Toplam sayfa sayısı 1 veya daha azsa sayfalama gösterme
-  if (totalPages <= 1) return null;
-
-  // Gösterilecek sayfa numaralarını belirle
+const Pagination = ({ 
+  totalItems, 
+  pageSize, 
+  currentPage, 
+  onPageChange,
+  siblingCount = 1,
+  className
+}) => {
+  // Sayfa sayısını hesapla
+  const totalPages = Math.ceil(totalItems / pageSize);
+  
+  // Toplam öge 0 ise veya sayfa sayısı 1 ise pagination gösterme
+  if (totalItems === 0 || totalPages <= 1) {
+    return null;
+  }
+  
+  // Geçerli sayfaya komşu sayfaları oluştur
   const getPageNumbers = () => {
-    const pageNumbers = [];
-    const maxPagesToShow = 5; // Gösterilecek maksimum sayfa numarası
+    // Maksimum gösterilecek sayfa butonları (önceki, sonraki ve ... düğmeleri hariç)
+    const maxVisiblePageButtons = siblingCount * 2 + 3; // İlk sayfa + son sayfa + mevcut sayfa + siblingCount*2
     
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    let endPage = startPage + maxPagesToShow - 1;
-    
-    if (endPage > totalPages) {
-      endPage = totalPages;
-      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    // Eğer toplam sayfa sayısı maksimum gösterilecek sayfa butonlarından az ise
+    // tüm sayfaları göster
+    if (totalPages <= maxVisiblePageButtons) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
+    // Left ve right sibling indexleri, ... göstermek için kullanılacak eşikler
+    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+    
+    // Başlangıçta veya sonda ... gösterme kararı
+    const shouldShowLeftDots = leftSiblingIndex > 2;
+    const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
+    
+    // İlk sayfa ve son sayfa daima gösterilecek
+    const firstPageIndex = 1;
+    const lastPageIndex = totalPages;
+    
+    // Sol ... göster, sağ ... göster
+    if (shouldShowLeftDots && shouldShowRightDots) {
+      const middleRange = Array.from(
+        { length: rightSiblingIndex - leftSiblingIndex + 1 },
+        (_, i) => leftSiblingIndex + i
+      );
+      return [firstPageIndex, 'leftDots', ...middleRange, 'rightDots', lastPageIndex];
     }
     
-    return pageNumbers;
+    // Sol ... göster, sağ ... gösterme
+    if (shouldShowLeftDots && !shouldShowRightDots) {
+      const rightRange = Array.from(
+        { length: totalPages - leftSiblingIndex + 1 },
+        (_, i) => leftSiblingIndex + i
+      );
+      return [firstPageIndex, 'leftDots', ...rightRange];
+    }
+    
+    // Sol ... gösterme, sağ ... göster
+    if (!shouldShowLeftDots && shouldShowRightDots) {
+      const leftRange = Array.from(
+        { length: rightSiblingIndex },
+        (_, i) => i + 1
+      );
+      return [...leftRange, 'rightDots', lastPageIndex];
+    }
+    
+    // Hatalı durum için boş array döndür
+    return [];
   };
-
+  
+  // Sayfa butonlarını oluştur
+  const pageNumbers = getPageNumbers();
+  
   return (
-    <div className="flex items-center justify-center">
-      <nav className="inline-flex shadow-sm -space-x-px rounded-md">
-        {/* İlk sayfa */}
-        <button
-          onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
-          className={`relative inline-flex items-center px-2 py-2 rounded-l-md border ${
-            currentPage === 1
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
-          } text-sm font-medium`}
-        >
-          <span className="sr-only">İlk Sayfa</span>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            <path fillRule="evenodd" d="M7.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L3.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
-        
-        {/* Önceki sayfa */}
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className={`relative inline-flex items-center px-2 py-2 border ${
-            currentPage === 1
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
-          } text-sm font-medium`}
-        >
-          <span className="sr-only">Önceki</span>
-          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </button>
+    <nav className={cn("flex justify-center mt-6", className)} aria-label="Sayfalama">
+      <ul className="flex items-center space-x-1">
+        {/* Önceki sayfa butonu */}
+        <li>
+          <Button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-md"
+            aria-label="Əvvəlki Səhifə"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </li>
         
         {/* Sayfa numaraları */}
-        {getPageNumbers().map(pageNumber => (
-          <button
-            key={pageNumber}
-            onClick={() => onPageChange(pageNumber)}
-            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-              pageNumber === currentPage
-                ? 'z-10 bg-primary text-white border-primary'
-                : 'bg-white text-gray-500 hover:bg-gray-50'
-            }`}
+        {pageNumbers.map((pageNumber, index) => {
+          // ... gösterimi için
+          if (pageNumber === 'leftDots' || pageNumber === 'rightDots') {
+            return (
+              <li key={`dots-${index}`} className="px-1">
+                <span className="flex items-center justify-center">
+                  <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                </span>
+              </li>
+            );
+          }
+          
+          // Sayfa numarası butonları için
+          return (
+            <li key={pageNumber}>
+              <Button
+                onClick={() => onPageChange(pageNumber)}
+                variant={currentPage === pageNumber ? "default" : "outline"}
+                size="icon"
+                className="h-9 w-9 rounded-md"
+                aria-label={`Səhifə ${pageNumber}`}
+                aria-current={currentPage === pageNumber ? "page" : undefined}
+              >
+                {pageNumber}
+              </Button>
+            </li>
+          );
+        })}
+        
+        {/* Sonraki sayfa butonu */}
+        <li>
+          <Button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-md"
+            aria-label="Sonrakı Səhifə"
           >
-            {pageNumber}
-          </button>
-        ))}
-        
-        {/* Sonraki sayfa */}
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className={`relative inline-flex items-center px-2 py-2 border ${
-            currentPage === totalPages
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
-          } text-sm font-medium`}
-        >
-          <span className="sr-only">Sonraki</span>
-          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-          </svg>
-        </button>
-        
-        {/* Son sayfa */}
-        <button
-          onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
-          className={`relative inline-flex items-center px-2 py-2 rounded-r-md border ${
-            currentPage === totalPages
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
-          } text-sm font-medium`}
-        >
-          <span className="sr-only">Son Sayfa</span>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4.293 15.707a1 1 0 001.414 0l5-5a1 1 0 000-1.414l-5-5a1 1 0 00-1.414 1.414L8.586 10 4.293 14.293a1 1 0 000 1.414z" clipRule="evenodd" />
-            <path fillRule="evenodd" d="M12.293 15.707a1 1 0 001.414 0l5-5a1 1 0 000-1.414l-5-5a1 1 0 00-1.414 1.414L16.586 10l-4.293 4.293a1 1 0 000 1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
-      </nav>
-    </div>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </li>
+      </ul>
+    </nav>
   );
 };
 

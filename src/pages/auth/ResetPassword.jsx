@@ -85,12 +85,12 @@ function ResetPassword() {
         }
         
         if (!response.isSucceeded) {
-          toast.error(response.message || 'Geçersiz veya süresi dolmuş bir sıfırlama bağlantısı.');
+          toast.error(response.message || 'Yanlış və ya vaxtı keçmiş sıfırlama bağlantısı.');
         }
       } catch (error) {
         console.error('Token doğrulama hatası:', error);
         setTokenValid(false);
-        toast.error('Geçersiz veya süresi dolmuş bir sıfırlama bağlantısı. Lütfen yeni bir şifre sıfırlama isteği oluşturun.');
+        toast.error('Yanlış və ya vaxtı keçmiş sıfırlama bağlantısı. Yeni parol sıfırlama sorğusu yaradın.');
       } finally {
         setValidating(false);
       }
@@ -127,14 +127,14 @@ function ResetPassword() {
       const response = await userService.updatePassword(passwordData);
       
       if (response.isSucceeded) {
-        toast.success('Şifreniz başarıyla sıfırlandı! Yeni şifrenizle giriş yapabilirsiniz.');
+        toast.success('Parolunuz uğurla sıfırlandı! Yeni parolunuzla daxil ola bilərsiniz.');
         navigate('/giris');
       } else {
-        toast.error(response.message || 'Şifre sıfırlama başarısız oldu.');
+        toast.error(response.message || 'Parolun sıfırlanması uğursuz oldu.');
       }
     } catch (error) {
       console.error('Şifre sıfırlama sırasında hata:', error);
-      toast.error(error.response?.data?.message || 'Şifre sıfırlama başarısız oldu. Lütfen tekrar deneyin.');
+      toast.error(error.response?.data?.message || 'Parolun sıfırlanması uğursuz oldu.');
     } finally {
       setIsLoading(false);
     }
@@ -156,12 +156,12 @@ function ResetPassword() {
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body text-center">
               <h2 className="card-title text-2xl font-bold text-center mb-6 justify-center">
-                Şifre Sıfırlama
+                Şifrə Sıfırlama
               </h2>
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
-              <p className="mt-4">Token doğrulanıyor, lütfen bekleyin...</p>
+              <p className="mt-4">Token təsdiqlənir, gözləyin...</p>
             </div>
           </div>
         </div>
@@ -176,19 +176,19 @@ function ResetPassword() {
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body text-center">
               <h2 className="card-title text-2xl font-bold text-center mb-6 justify-center">
-                Geçersiz Sıfırlama Bağlantısı
+              Yanlış Sıfırlama Linki
               </h2>
               <div className="text-error mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <p className="mb-4">Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.</p>
+              <p className="mb-4">Bu parol sıfırlama linki etibarsızdır və ya vaxtı keçmişdir.</p>
               <button 
                 onClick={() => navigate('/sifremi-unuttum')} 
                 className="btn btn-primary"
               >
-                Yeni Sıfırlama Bağlantısı İste
+                Yeni Sıfırlama Linkini tələb edin
               </button>
             </div>
           </div>
@@ -203,18 +203,18 @@ function ResetPassword() {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-2xl font-bold text-center mb-6 justify-center">
-              Yeni Şifre Oluştur
+              Yeni Şifrə Yarat
             </h2>
             
             <p className="text-center text-gray-600 mb-6">
-              {userEmail || "Hesabınız"} için yeni bir şifre belirleyin.
+              {userEmail || "Hesabınız"} üçün yeni parol təyin edin.
             </p>
             
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Yeni Şifre */}
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Yeni Şifre</span>
+                  <span className="label-text">Yeni Şifrə</span>
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
@@ -225,14 +225,14 @@ function ResetPassword() {
                     placeholder="Yeni şifreniz"
                     className={`input input-bordered w-full pl-10 pr-10 ${errors.password ? 'input-error' : ''}`}
                     {...register('password', { 
-                      required: 'Şifre gereklidir',
+                      required: 'Şifrə məcburidir',
                       minLength: {
                         value: 6,
-                        message: 'Şifre en az 6 karakter olmalıdır'
+                        message: 'Şifrə ən az 6 simvol olmalıdır'
                       },
                       pattern: {
                         value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/,
-                        message: 'Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermelidir'
+                        message: 'Parolda ən azı bir böyük hərf, bir kiçik hərf və bir rəqəm olmalıdır'
                       }
                     })}
                   />
@@ -258,11 +258,11 @@ function ResetPassword() {
                   </span>
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Şifrenizi tekrar girin"
+                    placeholder="Şifrənizi təkrar girin"
                     className={`input input-bordered w-full pl-10 pr-10 ${errors.confirmPassword ? 'input-error' : ''}`}
                     {...register('confirmPassword', { 
-                      required: 'Şifre tekrarı gereklidir',
-                      validate: value => value === watch('password') || 'Şifreler eşleşmiyor'
+                      required: 'Şifre təkrarı məcburidir',
+                      validate: value => value === watch('password') || 'Şifrələr uyğunlaşmır'
                     })}
                   />
                   <button
@@ -282,7 +282,7 @@ function ResetPassword() {
                   className={`btn btn-primary w-full ${isLoading ? 'loading' : ''}`}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'İşleniyor...' : 'Şifreyi Sıfırla'}
+                  {isLoading ? 'Emal olunur...' : 'Şifrəni Sıfırla'}
                 </button>
               </div>
             </form>

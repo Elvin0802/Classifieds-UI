@@ -53,8 +53,8 @@ function CreateAd() {
       console.log('CreateAd: Kimlik doğrulama gerekiyor, giriş sayfasına yönlendiriliyor');
       
       // Sadece kullanıcı bilgilendirmesi göster
-      toast.info('İlan oluşturmak için giriş yapmalısınız', {
-        autoClose: 2000,
+      toast.info('Giriş etməlisiz', {
+        autoClose: 1000,
         position: 'top-center'
       });
       
@@ -77,7 +77,7 @@ function CreateAd() {
         setCategories(response.data?.items || []);
       } catch (error) {
         console.error('Kategoriler alınırken hata:', error);
-        toast.error('Kategoriler yüklenemedi');
+        toast.error('Kategoriyalar yüklənmədi');
       }
     };
     
@@ -92,7 +92,7 @@ function CreateAd() {
         setLocations(response.data?.items || []);
       } catch (error) {
         console.error('Lokasyon bilgileri alınırken hata:', error);
-        toast.error('Konum bilgileri yüklenemedi');
+        toast.error('Məkanlar yüklənmədi');
       }
     };
     
@@ -131,7 +131,7 @@ function CreateAd() {
         }));
       } catch (error) {
         console.error('Ana kategoriler alınırken hata:', error);
-        toast.error('Ana kategoriler yüklenemedi');
+        toast.error('Əsas Kategoriyalar yüklənmədi');
       }
     };
     
@@ -181,7 +181,7 @@ function CreateAd() {
         }
       } catch (error) {
         console.error('Alt kategoriler alınırken hata:', error);
-        toast.error('Alt kategoriler yüklenemedi');
+        toast.error('Alt kategoriyalar yüklənmədi');
       }
     };
     
@@ -214,7 +214,7 @@ function CreateAd() {
     
     // Maksimum 5 resim kontrolü
     if (formData.images.length + files.length > 5) {
-      toast.error('En fazla 5 resim yükleyebilirsiniz');
+      toast.error('Max 5 foto yükləyə bilərsiz');
       return;
     }
     
@@ -252,43 +252,43 @@ function CreateAd() {
     
     // Validation
     if (!formData.title.trim()) {
-      setError('İlan başlığı zorunludur');
+      setError('Elan başlığı məcburidir');
       setPageLoading(false);
       return;
     }
     
     if (!formData.description.trim()) {
-      setError('İlan açıklaması zorunludur');
+      setError('Elan açıqlaması məcburidir');
       setPageLoading(false);
       return;
     }
     
     if (!formData.price || isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0) {
-      setError('Geçerli bir fiyat giriniz');
+      setError('Düzgün qiymət daxil edin');
       setPageLoading(false);
       return;
     }
     
     if (!formData.categoryId) {
-      setError('Kategori seçimi zorunludur');
+      setError('Mütləq kategoriya seçin');
       setPageLoading(false);
       return;
     }
     
     if (!formData.mainCategoryId) {
-      setError('Alt kategori seçimi zorunludur');
+      setError('Mütləq alt kategoriya seçin');
       setPageLoading(false);
       return;
     }
     
     if (!formData.locationId) {
-      setError('Konum seçimi zorunludur');
+      setError('Mütləq Məkan seçin');
       setPageLoading(false);
       return;
     }
     
     if (formData.images.length === 0) {
-      setError('En az bir resim eklemelisiniz');
+      setError('Ən az 1 foto seçin');
       setPageLoading(false);
       return;
     }
@@ -296,7 +296,7 @@ function CreateAd() {
     // Zorunlu alt kategori değerlerini kontrol et
     const requiredSubCategories = formData.subCategoryValues.filter(item => item.isRequired && !item.value);
     if (requiredSubCategories.length > 0) {
-      setError(`"${requiredSubCategories[0].name}" alanı zorunludur`);
+      setError(`"${requiredSubCategories[0].name}" məcburidir`);
       setPageLoading(false);
       return;
     }
@@ -344,7 +344,7 @@ function CreateAd() {
         
         if (response.status === 201 || response.status === 200 || response.isSucceeded) {
           setSuccess(true);
-          toast.success('İlan başarıyla oluşturuldu!');
+          toast.success('Elan Yaradıldı');
           
           // İlan detay sayfasına yönlendir
           setTimeout(() => {

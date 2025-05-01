@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaCalendar, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaFlag, FaHeart, FaRegHeart, FaArrowLeft, FaTag, FaChevronRight, FaStar, FaEye, FaClock, FaComment, FaExclamationCircle, FaEdit, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
+import { FaUser, FaCalendar, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaFlag, FaHeart, FaRegHeart, FaArrowLeft, FaTag, FaChevronRight, FaStar, FaEye, FaClock, FaComment, FaExclamationCircle, FaEdit, FaCheck, FaTimes, FaSpinner, FaCrown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import adService from '../../services/adService';
 import reportService from '../../services/reportService';
 import chatService from '../../services/chatService';
 import AdCard from '../../components/ad/AdCard';
+import FeatureAd from '../../components/ad/FeatureAd';
+import ReportModal from '../../components/report/ReportModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdStatus } from '../../services/adService';
 
@@ -20,14 +22,9 @@ function AdDetail() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
   const [sellerAds, setSellerAds] = useState([]);
   const [isLoadingSellerAds, setIsLoadingSellerAds] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
-  const [pricingOptions, setPricingOptions] = useState([]);
-  const [isLoadingPricingOptions, setIsLoadingPricingOptions] = useState(false);
-  const [selectedPricingOption, setSelectedPricingOption] = useState(null);
-  const [isProcessingFeature, setIsProcessingFeature] = useState(false);
   const [isCreatingChatRoom, setIsCreatingChatRoom] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [showStatusOptions, setShowStatusOptions] = useState(false);
@@ -162,35 +159,6 @@ function AdDetail() {
     }
   };
 
-  // İlanı bildir
-  const handleReportAd = async () => {
-    if (!reportReason.trim()) {
-      toast.error('Lütfen bildirim sebebini belirtin');
-      return;
-    }
-    
-    try {
-      const reportData = {
-        adId: id,
-        reason: 'OTHER', // Sabit bir değer olarak 'OTHER' kullanıyoruz
-        description: reportReason
-      };
-      
-      const response = await reportService.createReport(reportData);
-      
-      if (response && response.isSucceeded) {
-        toast.success('İlan başarıyla bildirildi');
-        setShowReportModal(false);
-        setReportReason('');
-      } else {
-        toast.error(response?.message || 'İlan bildirme işlemi başarısız oldu');
-      }
-    } catch (err) {
-      console.error('İlan bildirilirken hata oluştu:', err);
-      toast.error('İşlem sırasında bir hata oluştu');
-    }
-  };
-
   // Fiyat formatı
   const formatPrice = (price) => {
     if (price === undefined || price === null) return 'Belirtilmemiş';
@@ -229,66 +197,17 @@ function AdDetail() {
     }
   };
 
-  // Fiyatlandırma seçeneklerini getir
-  const fetchPricingOptions = async () => {
-    setIsLoadingPricingOptions(true);
-    
+  // İlan başarıyla öne çıkarıldıktan sonra
+  const handleFeatureSuccess = async () => {
+    // İlan detaylarını yeniden yükle
     try {
-      const response = await adService.getPricingOptions();
-      
-      if (response && response.isSucceeded && response.data) {
-        setPricingOptions(response.data.items || []);
-      } else {
-        toast.error('Fiyatlandırma seçenekleri yüklenemedi');
+      const adResponse = await adService.getById(id);
+      if (adResponse && adResponse.isSucceeded && adResponse.data && adResponse.data.item) {
+        setAd({...adResponse.data.item, isFeatured: true});
+        toast.success('İlan başarıyla VIP yapıldı');
       }
-    } catch (err) {
-      console.error('Fiyatlandırma seçenekleri yüklenirken hata oluştu:', err);
-      toast.error('Fiyatlandırma seçenekleri yüklenemedi');
-    } finally {
-      setIsLoadingPricingOptions(false);
-    }
-  };
-
-  // İlanı öne çıkar
-  const handleFeatureAd = async () => {
-    setIsProcessingFeature(true);
-    
-    try {
-      // Bir fiyatlandırma seçeneği seçilmemişse, varsayılan olarak ilk seçeneği kullan
-      const pricingOption = selectedPricingOption || pricingOptions[0];
-      
-      console.log("Öne çıkarma isteği gönderiliyor:", {
-        adId: id, 
-        durationDays: pricingOption.durationDays
-      });
-      
-      const response = await adService.featureAd(id, pricingOption.durationDays);
-      
-      console.log("Öne çıkarma cevabı:", response);
-      
-      if (response && response.isSucceeded) {
-        toast.success('İlan başarıyla öne çıkarıldı');
-        setShowFeatureModal(false);
-        setSelectedPricingOption(null);
-        
-        // İlan detaylarını yeniden yükle
-        const adResponse = await adService.getById(id);
-        if (adResponse && adResponse.isSucceeded && adResponse.data && adResponse.data.item) {
-          setAd({...adResponse.data.item, isFeatured: true}); // isFeatured'ı kesin olarak true yap
-        }
-        
-        // Sayfayı yeniden yükle - bazı durumlarda state güncellemesi yetmeyebilir
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        toast.error(response?.message || 'İlan öne çıkarılamadı');
-      }
-    } catch (err) {
-      console.error('İlan öne çıkarılırken hata oluştu:', err);
-      toast.error('İşlem sırasında bir hata oluştu');
-    } finally {
-      setIsProcessingFeature(false);
+    } catch (error) {
+      console.error('İlan bilgileri güncellenirken hata:', error);
     }
   };
 
@@ -456,16 +375,59 @@ function AdDetail() {
           {/* İlan Başlığı */}
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <div className="flex flex-wrap justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-800 mr-2">{ad.title}</h1>
-              <div className="flex items-center gap-2">
-                {ad.isFeatured && (
-                  <span className="bg-yellow-400 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
-                    Öne Çıkan
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-800 mr-2">{ad.title}</h1>
+                <div className="flex items-center gap-2 mt-2">
+                  {ad.isFeatured && (
+                    <span className="bg-yellow-400 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                      <FaCrown className="h-3 w-3" /> VIP İlan
+                    </span>
+                  )}
+                  <span className="text-xl font-bold text-primary">
+                    {formatPrice(ad.price)}
                   </span>
+                </div>
+              </div>
+              
+              {/* Eylem Butonları - Sağ Üstte */}
+              <div className="flex flex-wrap gap-2">
+                {/* İlanı düzenle butonu sadece admin veya ilan sahibi görebilir */}
+                {(isAdmin || ad.isOwner) && (
+                  <Link 
+                    to={`/ads/edit/${ad.id}`}
+                    className="btn btn-sm btn-outline flex items-center gap-1"
+                  >
+                    <FaEdit className="h-4 w-4" /> Düzenle
+                  </Link>
                 )}
-                <span className="text-xl font-bold text-primary">
-                  {formatPrice(ad.price)}
-                </span>
+                
+                {/* VIP Yap butonu - Öne çıkar */}
+                {ad.isOwner && !ad.isFeatured && (
+                  <button 
+                    className="btn btn-sm btn-warning flex items-center gap-1"
+                    onClick={() => setShowFeatureModal(true)}
+                  >
+                    <FaCrown className="h-4 w-4" /> VIP Yap
+                  </button>
+                )}
+                
+                {/* Favorilere Ekleme Butonu */}
+                <button
+                  onClick={() => handleToggleFavorite(ad.id)}
+                  className={`btn btn-sm ${
+                    isFavorited 
+                      ? 'btn-error text-white' 
+                      : 'btn-outline hover:btn-error hover:text-white'
+                  } flex items-center gap-1`}
+                  disabled={ad.isOwner}
+                  title={ad.isOwner ? 'Kendi ilanınızı favorilere ekleyemezsiniz' : ''}
+                >
+                  {isFavorited ? (
+                    <><FaHeart className="h-4 w-4" /></>
+                  ) : (
+                    <><FaRegHeart className="h-4 w-4" /></>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -637,39 +599,14 @@ function AdDetail() {
                 </div>
               </div>
               
-              {/* Aksiyon Butonları */}
-              <div className="flex flex-wrap gap-3">
+              {/* Diğer Eylem Butonları */}
+              <div className="flex flex-wrap gap-3 mt-4 mb-2">
                 {!ad.isOwner && (
                   <button 
-                    className={`btn ${isFavorited ? 'btn-error' : 'btn-outline'}`}
-                    onClick={() => handleToggleFavorite(ad.id)}
-                  >
-                    {isFavorited ? (
-                      <><FaHeart className="mr-2" /> Favorilerden Çıkar</>
-                    ) : (
-                      <><FaRegHeart className="mr-2" /> Favorilere Ekle</>
-                    )}
-                  </button>
-                )}
-                
-                {!ad.isOwner && (
-                  <button 
-                    className="btn btn-outline"
+                    className="btn btn-outline flex items-center gap-1"
                     onClick={() => setShowReportModal(true)}
                   >
                     <FaFlag className="mr-2" /> İlanı Bildir
-                  </button>
-                )}
-                
-                {ad.isOwner && !ad.isFeatured && (
-                  <button 
-                    className="btn btn-warning"
-                    onClick={() => {
-                      fetchPricingOptions();
-                      setShowFeatureModal(true);
-                    }}
-                  >
-                    <FaStar className="mr-2" /> VIP Yap
                   </button>
                 )}
               </div>
@@ -840,90 +777,21 @@ function AdDetail() {
         </div>
       </div>
       
-      {/* Feature Ad Modal */}
-      {showFeatureModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 max-w-xl w-full">
-            <h2 className="text-xl font-bold mb-4">İlanı Öne Çıkar</h2>
-            <p className="mb-4">İlanınızı öne çıkararak daha fazla potansiyel alıcıya ulaşabilirsiniz.</p>
-            
-            <div className="space-y-4 mt-4">
-              {pricingOptions.map((option, index) => (
-                <div 
-                  key={index}
-                  className={`border rounded-lg p-4 cursor-pointer ${selectedPricingOption?.id === option.id ? 'border-primary bg-primary bg-opacity-10' : 'border-gray-200'}`}
-                  onClick={() => setSelectedPricingOption(option)}
-                >
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="font-bold">{option.title}</h3>
-                      <p className="text-sm text-gray-600">{option.durationDays} gün boyunca öne çıkar</p>
-                    </div>
-                    <div className="text-lg font-bold">{option.price} ₺</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex justify-end mt-6 space-x-2">
-              <button 
-                className="btn btn-ghost"
-                onClick={() => {
-                  setShowFeatureModal(false);
-                  setSelectedPricingOption(null);
-                }}
-              >
-                İptal
-              </button>
-              <button 
-                className="btn btn-primary"
-                disabled={isProcessingFeature}
-                onClick={handleFeatureAd}
-              >
-                {isProcessingFeature ? 'İşleniyor...' : 'Öne Çıkar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Yeni Feature Ad Bileşeni */}
+      <FeatureAd 
+        adId={id} 
+        isOpen={showFeatureModal} 
+        onClose={() => setShowFeatureModal(false)} 
+        onSuccess={handleFeatureSuccess}
+      />
       
-      {/* İlan Bildirim Modalı */}
-      {showReportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md">
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-4">İlanı Bildir</h3>
-              <p className="text-gray-600 mb-4">
-                Lütfen bu ilanı neden bildirdiğinizi açıklayın. Bildiriminiz incelenecektir.
-              </p>
-              <textarea
-                className="w-full border rounded-lg p-3 min-h-[120px]"
-                placeholder="Bildirim nedeninizi açıklayın..."
-                value={reportReason}
-                onChange={(e) => setReportReason(e.target.value)}
-              ></textarea>
-              
-              <div className="flex justify-end gap-2 mt-4">
-                <button 
-                  className="btn btn-ghost"
-                  onClick={() => {
-                    setShowReportModal(false);
-                    setReportReason('');
-                  }}
-                >
-                  İptal
-                </button>
-                <button 
-                  className="btn btn-primary"
-                  onClick={handleReportAd}
-                >
-                  Bildir
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* İlan Bildirim Modalı - ReportModal bileşeni kullanılıyor */}
+      <ReportModal
+        adId={id}
+        adTitle={ad?.title}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+      />
       
       {/* Admin Kontrolü */}
       {isAdmin && ad && (

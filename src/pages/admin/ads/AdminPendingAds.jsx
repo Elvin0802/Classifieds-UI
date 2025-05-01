@@ -46,11 +46,11 @@ const AdminPendingAds = () => {
         setTotalPages(response.data.totalPages || 1);
         setTotalCount(response.data.totalCount || 0);
       } else {
-        setError('İlanlar yüklenirken bir hata oluştu.');
+        setError('Elanları yükləyərkən xəta baş verdi.');
       }
     } catch (err) {
       console.error('Bekleyen ilanlar yüklenirken hata:', err);
-      setError('İlanlar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+      setError('Elanları yükləyərkən xəta baş verdi.');
     } finally {
       setLoading(false);
     }
@@ -60,25 +60,23 @@ const AdminPendingAds = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 0:
-        return <span className="badge badge-warning">Beklemede</span>;
+        return <span className="badge badge-warning">Gözləyir</span>;
       case 1:
-        return <span className="badge badge-success">Aktif</span>;
+        return <span className="badge badge-success">Aktiv</span>;
       case 2:
-        return <span className="badge badge-error">Reddedildi</span>;
+        return <span className="badge badge-error">Müddəti bitib</span>;
       case 3:
-        return <span className="badge badge-info">Satıldı</span>;
-      case 4:
-        return <span className="badge badge-ghost">Süresi Doldu</span>;
+        return <span className="badge badge-info">İmtina edilib</span>;
       default:
-        return <span className="badge">Bilinmiyor</span>;
+        return <span className="badge">Naməlum status</span>;
     }
   };
   
   // Fiyat formatlama
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('tr-TR', {
+    return new Intl.NumberFormat('az-AZ', {
       style: 'currency',
-      currency: 'TRY',
+      currency: 'AZN',
       minimumFractionDigits: 0,
     }).format(price);
   };
@@ -87,7 +85,7 @@ const AdminPendingAds = () => {
   const formatDate = (dateString) => {
     // Null, undefined veya geçersiz değer kontrolü
     if (!dateString) {
-      return "Tarih belirtilmemiş";
+      return "Tarih seçilməyib";
     }
     
     try {
@@ -95,10 +93,10 @@ const AdminPendingAds = () => {
       
       // Geçersiz tarih kontrolü
       if (isNaN(date.getTime())) {
-        return "Geçersiz tarih";
+        return "tarih uyğunsuzdur.";
       }
       
-      return new Intl.DateTimeFormat('tr-TR', {
+      return new Intl.DateTimeFormat('az-AZ', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -107,7 +105,7 @@ const AdminPendingAds = () => {
       }).format(date);
     } catch (error) {
       console.error("Tarih formatlama hatası:", error);
-      return "Tarih formatlanamadı";
+      return "Tarix düzəltilmədi";
     }
   };
 
@@ -135,9 +133,9 @@ const AdminPendingAds = () => {
         <div>
           <h1 className="text-2xl font-bold mb-2">
             <FaClock className="inline mr-2 text-orange-500" />
-            Bekleyen İlanlar
+            Gözləyən Elanlar
           </h1>
-          <p className="text-gray-600">{totalCount} bekleyen ilan bulundu</p>
+          <p className="text-gray-600">{totalCount} gözləyən elan tapıldı</p>
         </div>
         
         {/* Arama kutusu */}
@@ -159,7 +157,7 @@ const AdminPendingAds = () => {
               type="submit"
               className="ml-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
             >
-              Ara
+              Axtar
             </button>
           </div>
         </form>
@@ -186,8 +184,8 @@ const AdminPendingAds = () => {
           {pendingAds.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <FaExclamationCircle className="mx-auto text-gray-400 text-5xl mb-4" />
-              <h3 className="text-xl font-medium text-gray-500">Bekleyen ilan bulunamadı</h3>
-              <p className="text-gray-400 mt-2">Şu anda bekleyen ilan bulunmamaktadır.</p>
+              <h3 className="text-xl font-medium text-gray-500">Gözləyən Elan tapılmadı</h3>
+              <p className="text-gray-400 mt-2">Hazırda gözlənilən Elan yoxdur.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -203,7 +201,7 @@ const AdminPendingAds = () => {
                       />
                     ) : (
                       <div className="flex items-center justify-center w-full h-full bg-gray-200 text-gray-400">
-                        Resim yok
+                        Foto yoxdur.
                       </div>
                     )}
                     
@@ -225,7 +223,7 @@ const AdminPendingAds = () => {
                     <div className="text-primary font-bold text-xl">{formatPrice(ad.price)}</div>
                     
                     <div className="text-xs text-gray-500 mt-2">
-                      Eklenme: {formatDate(ad.createdAt)}
+                      Əlavə olunma tarixi: {formatDate(ad.createdAt)}
                     </div>
                   </div>
                 </Link>

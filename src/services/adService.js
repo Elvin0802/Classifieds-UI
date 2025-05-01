@@ -274,6 +274,53 @@ const adService = {
   },
   
   /**
+   * İlanı resimlerle birlikte güncelle (multipart/form-data)
+   * @param {FormData} formData - Form verileri (ilan bilgileri ve resimler)
+   * @returns {Promise<Object>} Güncelleme sonucu
+   */
+  updateWithImages: async (formData) => {
+    try {
+      console.log('updateWithImages fonksiyonu çağrıldı');
+      
+      // FormData içeriğini logla
+      console.log('FormData içeriği (adService):');
+      for (let pair of formData.entries()) {
+        console.log('=> ' + pair[0] + ':', 
+          pair[0] === 'SubCategoryValuesJson' ? JSON.parse(pair[1]) : 
+          typeof pair[1] === 'string' && pair[1].length < 100 ? pair[1] : '[Dosya veya uzun içerik]');
+      }
+      
+      // API isteği gönder
+      const response = await apiClient.post(`${ADS_URL}/Update`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // Yanıtı logla
+      console.log('API yanıtı:', response.status, response.data);
+      
+      // Axios response formatını döndür
+      return {
+        status: response.status,
+        data: response.data?.data || response.data,
+        isSucceeded: response.data?.isSucceeded || (response.status >= 200 && response.status < 300),
+        message: response.data?.message || 'İşlem başarılı'
+      };
+    } catch (error) {
+      console.error('İlan ve resimler güncellenirken hata:', error.response?.data || error.message);
+      // Hata durumunda da benzer bir format döndür
+      throw {
+        status: error.response?.status || 500,
+        data: error.response?.data,
+        message: error.response?.data?.message || error.message,
+        isSucceeded: false,
+        originalError: error
+      };
+    }
+  },
+  
+  /**
    * İlan sil
    * @param {string} adId - İlan ID'si
    * @returns {Promise<Object>} Silme sonucu
