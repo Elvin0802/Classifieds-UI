@@ -8,10 +8,8 @@ import { Button, buttonVariants } from '../ui/button';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const { isAuthenticated, isAdmin, user, logout, fetchUserData } = useAuth();
   const navigate = useNavigate();
-  const profileMenuRef = useRef(null);
 
   // Debug: isAdmin değerinin durumunu kontrol et
   useEffect(() => {
@@ -31,28 +29,10 @@ function Header() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const toggleProfileMenu = () => {
-    setIsProfileMenuOpen(!isProfileMenuOpen);
-  };
-
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
-
-  // Profil menüsü dışına tıklandığında menüyü kapat
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Admin paneline doğrudan giriş linki (masaüstü için)
   const AdminLink = () => {
@@ -107,10 +87,10 @@ function Header() {
           {/* Masaüstü Menü */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className="text-gray-700 hover:text-primary font-medium">
-              Home
+              Ana Səhifə
             </Link>
             <Link to="/ads" className="text-gray-700 hover:text-primary font-medium">
-              Ads
+              Elanlar
             </Link>
             
             {/* Admin paneli linki */}
@@ -121,90 +101,18 @@ function Header() {
                 <Link to="/ads/create" className={cn(buttonVariants({ size: "sm" }), "gap-1")}>
                   <PlusCircle className="h-4 w-4" /> Elan Paylaş
                 </Link>
-                
-                {/* Mesajlar Butonu */}
                 <Link to="/messages" className="flex items-center text-gray-700 hover:text-primary gap-1">
                   <MessageCircle className="h-5 w-5" /> Mesajlar
                 </Link>
-                
-                <div className="relative" ref={profileMenuRef}>
-                  <button 
-                    className="flex items-center text-gray-700 hover:text-primary gap-1"
-                    onClick={toggleProfileMenu}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">{user?.name || 'Hesab'}</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                  
-                  {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg overflow-hidden z-20 border border-gray-200">
-                      <div className="p-3 border-b border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                        <p className="text-xs text-gray-500">{user?.email}</p>
-                      </div>
-                      
-                      <div className="p-2">
-                        <Link 
-                          to="/profile" 
-                          className="flex items-center rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                        >
-                          <User className="h-4 w-4" /> Profil
-                        </Link>
-                        <Link 
-                          to="/ads" 
-                          className="flex items-center rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                        >
-                          <PlusCircle className="h-4 w-4" /> Mənim Elanlarım
-                        </Link>
-                        <Link 
-                          to="/favorites" 
-                          className="flex items-center rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                        >
-                          <Heart className="h-4 w-4" /> Seçilmiş Elanlar
-                        </Link>
-                        
-                        {/* Dropdown'a da Mesajlar Link'i ekleyelim */}
-                        <Link 
-                          to="/messages" 
-                          className="flex items-center rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                        >
-                          <MessageCircle className="h-4 w-4" /> Mesajlar
-                        </Link>
-                      </div>
-                      
-                      {isAdmin && (
-                        <div className="p-2 border-t border-gray-200">
-                          <Link 
-                            to="/admin" 
-                            className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 gap-2"
-                            onClick={() => setIsProfileMenuOpen(false)}
-                          >
-                            <ShieldCheck className="h-4 w-4" /> Admin Panel
-                          </Link>
-                        </div>
-                      )}
-                      
-                      <div className="p-2 border-t border-gray-200">
-                        <button
-                          onClick={() => {
-                            handleLogout();
-                            setIsProfileMenuOpen(false);
-                          }}
-                          className="flex w-full items-center rounded-md px-3 py-2 text-sm text-red-600 hover:bg-red-50 gap-2"
-                        >
-                          <LogOut className="h-4 w-4" /> Çıxış
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <Link to="/profile" className="flex items-center text-gray-700 hover:text-primary gap-1">
+                  <User className="h-5 w-5" /> Profil
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center text-red-600 hover:text-red-700 gap-1 px-2 py-1 rounded"
+                >
+                  <LogOut className="h-5 w-5" /> Çıxış
+                </button>
               </>
             ) : (
               <div className="flex items-center space-x-4">
@@ -254,17 +162,11 @@ function Header() {
                 <Link to="/ads/create" className="flex items-center py-2 text-primary font-medium gap-2" onClick={toggleMenu}>
                   <PlusCircle className="h-4 w-4" /> Elan Paylaş
                 </Link>
-                
-                {/* Mobil Menüye Mesajlar linki ekliyoruz */}
                 <Link to="/messages" className="flex items-center py-2 text-gray-700 hover:text-primary gap-2" onClick={toggleMenu}>
                   <MessageCircle className="h-4 w-4" /> Mesajlar
                 </Link>
-                
                 <Link to="/profile" className="flex items-center py-2 text-gray-700 hover:text-primary gap-2" onClick={toggleMenu}>
                   <User className="h-4 w-4" /> Profil
-                </Link>
-                <Link to="/ads" className="flex items-center py-2 text-gray-700 hover:text-primary gap-2" onClick={toggleMenu}>
-                  <PlusCircle className="h-4 w-4" /> Mənim Elanlarım
                 </Link>
                 <Link to="/favorites" className="flex items-center py-2 text-gray-700 hover:text-primary gap-2" onClick={toggleMenu}>
                   <Heart className="h-4 w-4" /> Seçilmiş Elanlar

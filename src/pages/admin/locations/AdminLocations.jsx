@@ -17,7 +17,7 @@ function AdminLocations() {
       setLocations(response.data.items || []);
     } catch (error) {
       console.error('Lokasyonlar alınırken hata:', error);
-      toast.error('Lokasyonlar yüklenirken bir hata oluştu.');
+      toast.error('xəta');
     } finally {
       setLoading(false);
     }
@@ -29,14 +29,14 @@ function AdminLocations() {
   
   // Lokasyon silme
   const handleDeleteLocation = async (locationId) => {
-    if (window.confirm('Bu lokasyonu silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('Məkanı silmək istəyirsiniz?')) {
       try {
         await locationService.delete(locationId);
-        toast.success('Lokasyon başarıyla silindi.');
+        toast.success('məkan silindi.');
         fetchLocations(); // Tabloyu yenile
       } catch (error) {
         console.error('Lokasyon silinirken hata:', error);
-        toast.error('Lokasyon silinemedi. Bir hata oluştu.');
+        toast.error('xəta');
       }
     }
   };
@@ -59,11 +59,11 @@ function AdminLocations() {
   return (
     <div>
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-        <h1 className="text-2xl font-bold mb-4 md:mb-0">Lokasyon Yönetimi</h1>
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">Məkanlar</h1>
         
         <div className="flex gap-2">
           <Link to="/admin/locations/create" className="btn btn-primary btn-sm">
-            <FaPlus className="mr-2" /> Yeni Lokasyon
+            <FaPlus className="mr-2" /> Yeni Məkan
           </Link>
         </div>
       </div>
@@ -72,13 +72,13 @@ function AdminLocations() {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div className="flex items-center text-gray-600">
-            <FaMapMarkerAlt className="mr-2" /> Toplam {locations.length} lokasyon bulundu
+            <FaMapMarkerAlt className="mr-2" /> Cəmi {locations.length} məkan tapıldı
           </div>
           
           <div className="relative w-full md:w-64">
             <input
               type="text"
-              placeholder="Lokasyon ara..."
+              placeholder="Məkan axtar..."
               className="input input-bordered w-full pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -97,7 +97,7 @@ function AdminLocations() {
         <>
           {filteredLocations.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow-md text-center">
-              <p className="text-gray-600">Lokasyon bulunamadı. Yeni bir lokasyon ekleyin.</p>
+              <p className="text-gray-600">Məkan Tapılmadı. Yeni bir məkan yarat.</p>
             </div>
           ) : (
             <div className="overflow-x-auto bg-white rounded-lg shadow-md">
@@ -105,10 +105,10 @@ function AdminLocations() {
                 <thead>
                   <tr>
                     <th className="w-16"></th>
-                    <th>Şehir</th>
-                    <th>Ülke</th>
-                    <th>Oluşturma Tarihi</th>
-                    <th className="w-24">İşlemler</th>
+                    <th>Şəhər</th>
+                    <th>Ölke</th>
+                    <th>Yaradılma Tarixi</th>
+                    <th className="w-24">Əməliyyatlar</th>
                   </tr>
                 </thead>
                 <tbody>

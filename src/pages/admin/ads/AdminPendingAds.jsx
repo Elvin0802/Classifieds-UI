@@ -190,40 +190,37 @@ const AdminPendingAds = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {pendingAds.map((ad) => (
-                <Link to={`/ads/${ad.id}`} key={ad.id} className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-                  {/* İlan resmi */}
-                  <figure className="relative h-48 bg-gray-100">
-                    {ad.images && ad.images.length > 0 ? (
-                      <img
-                        src={ad.images[0].url}
-                        alt={ad.title}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full bg-gray-200 text-gray-400">
-                        Foto yoxdur.
+                <Link to={`/ads/${ad.id}`} key={ad.id} className="group">
+                  <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden flex flex-col h-full">
+                    {/* İlan resmi */}
+                    <div className="relative h-48 bg-gray-100">
+                      {ad.mainImageUrl ? (
+                        <img
+                          src={ad.mainImageUrl}
+                          alt={ad.title}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center w-full h-full bg-gray-200 text-gray-400">
+                          Foto yoxdur.
+                        </div>
+                      )}
+                      {/* Beklemede durumu */}
+                      <div className="absolute top-2 right-2">
+                        {getStatusBadge(ad.adStatus)}
                       </div>
-                    )}
-                    
-                    {/* Beklemede durumu */}
-                    <div className="absolute top-2 right-2">
-                      {getStatusBadge(ad.adStatus)}
                     </div>
-                  </figure>
-                  
-                  <div className="card-body p-4">
-                    <h2 className="card-title text-lg font-bold mb-2 line-clamp-2">{ad.title}</h2>
-                    
-                    <div className="flex items-center text-gray-500 text-sm mb-2">
-                      <span className="truncate">
-                        {ad.location?.city}, {ad.location?.country}
-                      </span>
-                    </div>
-                    
-                    <div className="text-primary font-bold text-xl">{formatPrice(ad.price)}</div>
-                    
-                    <div className="text-xs text-gray-500 mt-2">
-                      Əlavə olunma tarixi: {formatDate(ad.createdAt)}
+                    <div className="flex-1 flex flex-col p-4">
+                      <h2 className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors">{ad.title}</h2>
+                      <div className="flex items-center text-gray-500 text-sm mb-2">
+                        <span className="truncate">
+                          {ad.locationCityName || 'Məkan yoxdur'}
+                        </span>
+                      </div>
+                      <div className="text-primary font-bold text-xl mb-2">{formatPrice(ad.price)}</div>
+                      <div className="text-xs text-gray-500 mt-auto">
+                        Əlavə olunma tarixi: {formatDate(ad.createdAt)}
+                      </div>
                     </div>
                   </div>
                 </Link>

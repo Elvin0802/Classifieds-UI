@@ -20,7 +20,7 @@ function AdminCategories() {
       setCategories(response.data.items || []);
     } catch (error) {
       console.error('Kategoriler alınırken hata:', error);
-      toast.error('Kategoriler yüklenirken bir hata oluştu.');
+      toast.error('xəta.');
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ function AdminCategories() {
       setMainCategories(response.data.items || []);
     } catch (error) {
       console.error('Ana kategoriler alınırken hata:', error);
-      toast.error('Ana kategoriler yüklenirken bir hata oluştu.');
+      toast.error('xəta.');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ function AdminCategories() {
       setSubCategories(response.data.items || []);
     } catch (error) {
       console.error('Alt kategoriler alınırken hata:', error);
-      toast.error('Alt kategoriler yüklenirken bir hata oluştu.');
+      toast.error('xəta.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ function AdminCategories() {
   
   // Kategori silme işlemi
   const handleDeleteCategory = async (categoryId, categoryType) => {
-    if (window.confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('dəqiq simək istayirsiz?')) {
       try {
         setLoading(true);
         let response;
@@ -81,7 +81,7 @@ function AdminCategories() {
         }
         
         if (response.isSucceeded) {
-          toast.success('Kategori başarıyla silindi.');
+          toast.success('Kategoriya silindi.');
           // Kategori listesini yeniden yükle
           if (activeTab === 'all') {
             fetchCategories();
@@ -91,11 +91,11 @@ function AdminCategories() {
             fetchSubCategories();
           }
         } else {
-          toast.error(response.message || 'Kategori silinirken bir hata oluştu.');
+          toast.error(response.message || 'xəta.');
         }
       } catch (error) {
         console.error('Kategori silinirken hata:', error);
-        toast.error('Kategori silinirken bir hata oluştu.');
+        toast.error('xəta.');
       } finally {
         setLoading(false);
       }
@@ -127,20 +127,35 @@ function AdminCategories() {
   
   const filteredCategories = getFilteredCategories();
   
+  // Üst kategori adını bulmak için yardımcı fonksiyonlar
+  const getParentCategoryName = (category) => {
+    if (category.type === 'main') {
+      // main kategoriler için parentCategoryId ile categories'den bul
+      const parent = categories.find(cat => cat.id === category.parentCategoryId);
+      return parent ? parent.name : '-';
+    }
+    if (category.type === 'sub') {
+      // sub kategoriler için mainCategoryId ile mainCategories'den bul
+      const main = mainCategories.find(cat => cat.id === category.mainCategoryId);
+      return main ? main.name : '-';
+    }
+    return '-';
+  };
+  
   return (
     <div>
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-        <h1 className="text-2xl font-bold mb-4 md:mb-0">Kategori Yönetimi</h1>
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">Kategoriya İdarə Edilməsi</h1>
         
         <div className="flex flex-col md:flex-row gap-2">
           <Link to="/admin/categories/create" className="btn btn-primary btn-sm">
-            <FaPlus className="mr-2" /> Yeni Kategori
+            <FaPlus className="mr-2" /> Yeni Kategoriya
           </Link>
           <Link to="/admin/categories/create-main" className="btn btn-secondary btn-sm">
-            <FaPlus className="mr-2" /> Yeni Ana Kategori
+            <FaPlus className="mr-2" /> Yeni Əsas Kategoriya
           </Link>
           <Link to="/admin/categories/create-sub" className="btn btn-accent btn-sm">
-            <FaPlus className="mr-2" /> Yeni Alt Kategori
+            <FaPlus className="mr-2" /> Yeni Alt Kategoriya
           </Link>
         </div>
       </div>
@@ -155,19 +170,19 @@ function AdminCategories() {
                 className={`tab ${activeTab === 'all' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('all')}
               >
-                Tüm Kategoriler
+                Bütün Kategoriyalar
               </button>
               <button 
                 className={`tab ${activeTab === 'main' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('main')}
               >
-                Ana Kategoriler
+                Əsas Kategoriyalar
               </button>
               <button 
                 className={`tab ${activeTab === 'sub' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('sub')}
               >
-                Alt Kategoriler
+                Alt Kategoriyalar
               </button>
             </div>
           </div>
@@ -194,7 +209,7 @@ function AdminCategories() {
         <>
           {filteredCategories.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow-md text-center">
-              <p className="text-gray-600">Kategori bulunamadı. Yeni bir kategori ekleyin.</p>
+              <p className="text-gray-600">Kategoriya tapilmadı. Yeni kategoriya yaradın.</p>
             </div>
           ) : (
             <div className="overflow-x-auto bg-white rounded-lg shadow-md">
@@ -202,10 +217,8 @@ function AdminCategories() {
                 <thead>
                   <tr>
                     <th className="w-16"></th>
-                    <th>Kategori Adı</th>
-                    <th>Tür</th>
-                    <th>Açıklama</th>
-                    <th className="w-24">İşlemler</th>
+                    <th>Kategoriya Adı</th>
+                    <th className="w-24">Əməliyyatlar</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,19 +234,18 @@ function AdminCategories() {
                         )}
                       </td>
                       <td className="font-medium">{category.name}</td>
-                      <td>
-                        {category.type === 'main' ? 'Ana Kategori' : 
-                         category.type === 'sub' ? 'Alt Kategori' : 'Kategori'}
-                      </td>
-                      <td className="max-w-xs truncate">{category.description || '-'}</td>
+                      
                       <td>
                         <div className="flex space-x-2">
-                          <Link 
-                            to={`/admin/categories/${category.id}`} 
-                            className="btn btn-ghost btn-xs"
-                          >
-                            <FaEye className="text-blue-500" />
-                          </Link>
+                          {/* Sadece type olmayanlarda View butonu */}
+                          {(!category.type) && (
+                            <Link 
+                              to={`/admin/categories/${category.id}`} 
+                              className="btn btn-ghost btn-xs"
+                            >
+                              <FaEye className="text-blue-500" />
+                            </Link>
+                          )}
                           <button 
                             onClick={() => handleDeleteCategory(category.id, category.type)}
                             className="btn btn-ghost btn-xs"

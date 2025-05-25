@@ -22,7 +22,7 @@ function CreateMainCategory() {
         setCategories(response.data.items || []);
       } catch (error) {
         console.error('Kategoriler alınırken hata:', error);
-        toast.error('Kategoriler yüklenirken bir hata oluştu.');
+        toast.error('xəta');
       }
     };
     
@@ -45,11 +45,11 @@ function CreateMainCategory() {
     
     try {
       await categoryService.createMainCategory(formData);
-      toast.success('Ana kategori başarıyla oluşturuldu.');
+      toast.success('Yaradıldı.');
       navigate('/admin/categories');
     } catch (error) {
       console.error('Ana kategori oluşturulurken hata:', error);
-      toast.error('Ana kategori oluşturulamadı. Lütfen tekrar deneyin.');
+      toast.error('xəta.');
     } finally {
       setLoading(false);
     }
@@ -58,12 +58,12 @@ function CreateMainCategory() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Yeni Ana Kategori Oluştur</h1>
+        <h1 className="text-2xl font-bold">Yeni Əsas Kategoriya Yarat</h1>
         <button 
           onClick={() => navigate('/admin/categories')}
           className="btn btn-outline btn-sm"
         >
-          <FaArrowLeft className="mr-2" /> Geri Dön
+          <FaArrowLeft className="mr-2" /> Geri
         </button>
       </div>
       
@@ -73,7 +73,7 @@ function CreateMainCategory() {
             {/* Ana Kategori Adı */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Ana Kategori Adı*</span>
+                <span className="label-text font-medium">Əsas Kategoriya Adı*</span>
               </label>
               <input
                 type="text"
@@ -81,7 +81,7 @@ function CreateMainCategory() {
                 value={formData.name}
                 onChange={handleChange}
                 className="input input-bordered"
-                placeholder="Ana kategori adını girin"
+                placeholder="Əsas kategoriya adı"
                 required
               />
             </div>
@@ -89,7 +89,7 @@ function CreateMainCategory() {
             {/* Üst Kategori */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Üst Kategori*</span>
+                <span className="label-text font-medium">Kategoriya*</span>
               </label>
               <select
                 name="parentCategoryId"
@@ -98,7 +98,7 @@ function CreateMainCategory() {
                 className="select select-bordered"
                 required
               >
-                <option value="" disabled>Kategori seçin</option>
+                <option value="" disabled>Kategoriya seçin</option>
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -107,7 +107,7 @@ function CreateMainCategory() {
               </select>
               <label className="label">
                 <span className="label-text-alt text-gray-500">
-                  Ana kategorinin bağlı olacağı üst kategoriyi seçin
+                  Əsas Kategoriyanı Seçin
                 </span>
               </label>
             </div>
@@ -124,7 +124,7 @@ function CreateMainCategory() {
               ) : (
                 <FaSave className="mr-2" />
               )}
-              Ana Kategori Oluştur
+              Əsas Kategoriya Yarat
             </button>
           </div>
         </form>

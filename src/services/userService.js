@@ -61,7 +61,7 @@ const userService = {
    */
   updatePassword: async (passwordData) => {
     try {
-      const response = await apiClient.post(`${USERS_URL}/update-password`, passwordData);
+      const response = await apiClient.post(`${USERS_URL}/UpdatePassword`, passwordData);
       return response.data;
     } catch (error) {
       console.error('Şifre güncelleme sırasında hata:', error);
@@ -76,7 +76,6 @@ const userService = {
    * @example
    * // İstek veri formatı
    * {
-   *   "userId": "string",
    *   "oldPassword": "string",
    *   "newPassword": "string",
    *   "newPasswordConfirm": "string"
@@ -91,10 +90,45 @@ const userService = {
    */
   changePassword: async (passwordData) => {
     try {
-      const response = await apiClient.post(`${USERS_URL}/change-password`, passwordData);
+      const { oldPassword, newPassword, newPasswordConfirm } = passwordData;
+      const response = await apiClient.post(`${USERS_URL}/ChangePassword`, {
+        oldPassword,
+        newPassword,
+        newPasswordConfirm
+      });
       return response.data;
     } catch (error) {
       console.error('Şifre değiştirme sırasında hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Email doğrulama kodunu kontrol eder
+   * @param {Object} data - { email, code }
+   * @returns {Promise<Object>} Sonuç
+   */
+  verifyEmail: async (data) => {
+    try {
+      const response = await apiClient.post(`${USERS_URL}/VerifyEmail`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Email doğrulama sırasında hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Email doğrulama kodunu tekrar gönderir
+   * @param {Object} data - { email }
+   * @returns {Promise<Object>} Sonuç
+   */
+  resendVerification: async (data) => {
+    try {
+      const response = await apiClient.post(`${USERS_URL}/ResendVerification`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Doğrulama kodu tekrar gönderilemedi:', error);
       throw error;
     }
   }

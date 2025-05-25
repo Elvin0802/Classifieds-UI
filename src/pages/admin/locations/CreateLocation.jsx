@@ -9,7 +9,7 @@ function CreateLocation() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     city: '',
-    country: 'Türkiye'
+    country: 'Azerbaijan'
   });
 
   // Form verilerini güncelle
@@ -28,11 +28,11 @@ function CreateLocation() {
     
     try {
       await locationService.create(formData);
-      toast.success('Lokasyon başarıyla oluşturuldu.');
+      toast.success('məkan yarandı.');
       navigate('/admin/locations');
     } catch (error) {
       console.error('Lokasyon oluşturulurken hata:', error);
-      toast.error('Lokasyon oluşturulamadı. Lütfen tekrar deneyin.');
+      toast.error('xəta.');
     } finally {
       setLoading(false);
     }
@@ -41,12 +41,12 @@ function CreateLocation() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Yeni Lokasyon Oluştur</h1>
+        <h1 className="text-2xl font-bold">Yeni Məkan Yarat</h1>
         <button 
           onClick={() => navigate('/admin/locations')}
           className="btn btn-outline btn-sm"
         >
-          <FaArrowLeft className="mr-2" /> Geri Dön
+          <FaArrowLeft className="mr-2" /> Geri
         </button>
       </div>
       
@@ -56,7 +56,7 @@ function CreateLocation() {
             {/* Şehir */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Şehir*</span>
+                <span className="label-text font-medium">Şəhər*</span>
               </label>
               <input
                 type="text"
@@ -64,7 +64,7 @@ function CreateLocation() {
                 value={formData.city}
                 onChange={handleChange}
                 className="input input-bordered"
-                placeholder="Şehir adını girin"
+                placeholder="Şəhər adı"
                 required
               />
             </div>
@@ -72,7 +72,7 @@ function CreateLocation() {
             {/* Ülke */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Ülke*</span>
+                <span className="label-text font-medium">Ölkə*</span>
               </label>
               <input
                 type="text"
@@ -80,7 +80,7 @@ function CreateLocation() {
                 value={formData.country}
                 onChange={handleChange}
                 className="input input-bordered"
-                placeholder="Ülke adını girin"
+                placeholder="Ölkə adı"
                 required
               />
             </div>
@@ -97,7 +97,7 @@ function CreateLocation() {
               ) : (
                 <FaSave className="mr-2" />
               )}
-              Lokasyon Oluştur
+              Məkan Yarat
             </button>
           </div>
         </form>

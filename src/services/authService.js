@@ -202,7 +202,7 @@ const authService = {
    */
   resetPassword: async (data) => {
     try {
-      const response = await apiClient.post(`${AUTH_URL}/reset-password`, data);
+      const response = await apiClient.post(`${AUTH_URL}/ResetPassword`, data);
       return response.data;
     } catch (error) {
       console.error('Şifre sıfırlama talebi gönderilirken hata:', error);
@@ -223,7 +223,7 @@ const authService = {
    */
   confirmResetToken: async (data) => {
     try {
-      const response = await apiClient.post(`${AUTH_URL}/confirm-reset-token`, data);
+      const response = await apiClient.post(`${AUTH_URL}/ConfirmResetToken`, data);
       return response.data;
     } catch (error) {
       console.error('Şifre sıfırlama token\'ı doğrulanırken hata:', error);

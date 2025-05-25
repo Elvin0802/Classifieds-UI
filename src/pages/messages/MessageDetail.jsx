@@ -27,6 +27,7 @@ function MessageDetail() {
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const messageContainerRef = useRef(null);
+  const prevMessagesLength = useRef(messages.length);
   
   // Yönlendirme kontrolü - kullanıcı giriş yapmamışsa login sayfasına yönlendir
   useEffect(() => {
@@ -174,9 +175,12 @@ function MessageDetail() {
   
   // Yeni mesaj geldiğinde en alta otomatik kaydırma
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > prevMessagesLength.current) {
+      if (messageContainerRef.current) {
+        messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      }
     }
+    prevMessagesLength.current = messages.length;
   }, [messages]);
   
   // Mesaj gönder
@@ -233,7 +237,7 @@ function MessageDetail() {
     if (!dateString) return '';
     
     const date = new Date(dateString);
-    return date.toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString('az-AZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
   };
   
   // Mesajları tarihe göre grupla
@@ -377,6 +381,15 @@ function MessageDetail() {
     };
   };
   
+  useEffect(() => {
+    // Mesaj detayına girildiğinde flag'i true yap
+    window.isChatDetailActive = true;
+    return () => {
+      // Sayfa kapandığında flag'i false yap
+      window.isChatDetailActive = false;
+    };
+  }, []);
+  
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex justify-center">
@@ -482,13 +495,13 @@ function MessageDetail() {
           {/* Mesaj Gönderme Alanı */}
           <CardFooter className="p-3 border-t">
             <form onSubmit={handleSendMessage} className="flex items-center w-full gap-2">
-              <Input
-                type="text"
+              <textarea
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={e => setNewMessage(e.target.value)}
                 placeholder="Mesajınızı yazın..."
-                className="flex-1"
+                className="flex-1 w-full resize-none min-h-12 max-h-40 overflow-y-auto rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSending}
+                rows={1}
               />
               <Button 
                 type="submit" 
@@ -500,7 +513,6 @@ function MessageDetail() {
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                Gönder
               </Button>
             </form>
           </CardFooter>

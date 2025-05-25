@@ -24,22 +24,22 @@ function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Home
+                  <ExternalLink className="h-3 w-3" /> Əsas səhifə
                 </Link>
               </li>
               <li>
                 <Link to="/ads" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Ads
+                  <ExternalLink className="h-3 w-3" /> Elanlar
                 </Link>
               </li>
               <li>
                 <Link to="/about" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> About Us
+                  <ExternalLink className="h-3 w-3" /> Haqqımızda
                 </Link>
               </li>
               <li>
                 <Link to="/help" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Help
+                  <ExternalLink className="h-3 w-3" /> Yardım
                 </Link>
               </li>
             </ul>
@@ -51,17 +51,17 @@ function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Privacy Policy
+                  <ExternalLink className="h-3 w-3" /> Təhlükəsizlik siyasəti
                 </Link>
               </li>
               <li>
                 <Link to="#" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Terms of Service
+                  <ExternalLink className="h-3 w-3" /> İstifadəçi şərtləri
                 </Link>
               </li>
               <li>
                 <Link to="#" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Rules
+                  <ExternalLink className="h-3 w-3" /> Qaydalar
                 </Link>
               </li>
             </ul>
@@ -75,7 +75,7 @@ function Footer() {
                 <Mail className="h-4 w-4" /> info@classifieds.app
               </p>
               <p className="text-gray-400 flex items-center gap-2 mb-4">
-                <Phone className="h-4 w-4" /> +994 12 345 67 89
+                <Phone className="h-4 w-4" /> +994 00 000 00 00
               </p>
               
               <div className="flex space-x-4">

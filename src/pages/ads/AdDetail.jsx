@@ -28,6 +28,7 @@ function AdDetail() {
   const [isCreatingChatRoom, setIsCreatingChatRoom] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [showStatusOptions, setShowStatusOptions] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // İlan detaylarını getir
   useEffect(() => {
@@ -47,11 +48,11 @@ function AdDetail() {
             fetchSellerAds(response.data.item.appUser.id, response.data.item.id);
           }
         } else {
-          setError('İlan detayları alınırken bir hata oluştu');
+          setError('xəta');
         }
       } catch (err) {
         console.error('İlan detayları yüklenirken hata oluştu:', err);
-        setError('İlan detayları yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+        setError('xəta');
       } finally {
         setIsLoading(false);
       }
@@ -68,7 +69,7 @@ function AdDetail() {
     
     try {
       const response = await adService.getUserAds(userId, { 
-        pageSize: 4,
+        pageSize: 12,
         adStatus: 1
       });
       
@@ -90,26 +91,34 @@ function AdDetail() {
       if (adId === ad.id) {
         // Kendi ilanını favorilere ekleyemez
         if (ad.isOwner) {
-          toast.info('Kendi ilanınızı favorilere ekleyemezsiniz');
+          toast.info('əlavə edə bilməzsiz');
           return;
         }
 
         if (isFavorited) {
-          // Önce UI'ı güncelle
-          setIsFavorited(false);
-          setAd({...ad, isSelected: false});
-          toast.success('İlan favorilerden çıkarıldı');
+          // API isteği gönder
+          const response = await adService.unselectAd(adId);
           
-          // Sonra API isteği gönder
-          await adService.unselectAd(adId);
+          // Başarılı ise UI'ı güncelle
+          if (response && response.isSucceeded) {
+            setIsFavorited(false);
+            setAd({...ad, isSelected: false});
+            toast.success('silindi');
+          } else {
+            toast.error('xəta: İşlem başarısız oldu');
+          }
         } else {
-          // Önce UI'ı güncelle
-          setIsFavorited(true);
-          setAd({...ad, isSelected: true});
-          toast.success('İlan favorilere eklendi');
+          // API isteği gönder
+          const response = await adService.selectAd(adId);
           
-          // Sonra API isteği gönder
-          await adService.selectAd(adId);
+          // Başarılı ise UI'ı güncelle
+          if (response && response.isSucceeded) {
+            setIsFavorited(true);
+            setAd({...ad, isSelected: true});
+            toast.success('əlavə olundu');
+          } else {
+            toast.error('xəta: İşlem başarısız oldu');
+          }
         }
       } 
       // Satıcının diğer ilanları için
@@ -118,53 +127,51 @@ function AdDetail() {
         if (sellerAd) {
           // Kendi ilanını favorilere ekleyemez
           if (sellerAd.isOwner) {
-            toast.info('Kendi ilanınızı favorilere ekleyemezsiniz');
+            toast.info('əlavə oluna bilməz');
             return;
           }
 
           if (sellerAd.isSelected) {
-            // Önce UI'ı güncelle
-            setSellerAds(sellerAds.map(sa => 
-              sa.id === adId ? { ...sa, isSelected: false } : sa
-            ));
-            toast.success('İlan favorilerden çıkarıldı');
+            // API isteği gönder
+            const response = await adService.unselectAd(adId);
             
-            // Sonra API isteği gönder
-            await adService.unselectAd(adId);
+            // Başarılı ise UI'ı güncelle
+            if (response && response.isSucceeded) {
+              setSellerAds(sellerAds.map(sa => 
+                sa.id === adId ? { ...sa, isSelected: false } : sa
+              ));
+              toast.success('çıxarıldı');
+            } else {
+              toast.error('xəta: İşlem başarısız oldu');
+            }
           } else {
-            // Önce UI'ı güncelle
-            setSellerAds(sellerAds.map(sa => 
-              sa.id === adId ? { ...sa, isSelected: true } : sa
-            ));
-            toast.success('İlan favorilere eklendi');
+            // API isteği gönder
+            const response = await adService.selectAd(adId);
             
-            // Sonra API isteği gönder
-            await adService.selectAd(adId);
+            // Başarılı ise UI'ı güncelle
+            if (response && response.isSucceeded) {
+              setSellerAds(sellerAds.map(sa => 
+                sa.id === adId ? { ...sa, isSelected: true } : sa
+              ));
+              toast.success('əlavə olundu');
+            } else {
+              toast.error('xəta: İşlem başarısız oldu');
+            }
           }
         }
       }
     } catch (err) {
       console.error('Favori işlemi sırasında hata oluştu:', err);
-      toast.error('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
-      
-      // Hata durumunda UI'ı eski haline getir
-      if (adId === ad.id) {
-        setIsFavorited(!isFavorited);
-        setAd({...ad, isSelected: !ad.isSelected});
-      } else {
-        setSellerAds(sellerAds.map(sa => 
-          sa.id === adId ? { ...sa, isSelected: !sa.isSelected } : sa
-        ));
-      }
+      toast.error('xəta: ' + (err.message || 'xəta'));
     }
   };
 
   // Fiyat formatı
   const formatPrice = (price) => {
-    if (price === undefined || price === null) return 'Belirtilmemiş';
-    return new Intl.NumberFormat('tr-TR', {
+    if (price === undefined || price === null) return 'Təyin Olunmuyub';
+    return new Intl.NumberFormat('az-AZ', {
       style: 'currency',
-      currency: 'TRY',
+      currency: 'AZN',
       minimumFractionDigits: 0
     }).format(price);
   };
@@ -172,10 +179,10 @@ function AdDetail() {
   // Tarih formatı
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString('az-AZ', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -204,7 +211,7 @@ function AdDetail() {
       const adResponse = await adService.getById(id);
       if (adResponse && adResponse.isSucceeded && adResponse.data && adResponse.data.item) {
         setAd({...adResponse.data.item, isFeatured: true});
-        toast.success('İlan başarıyla VIP yapıldı');
+        toast.success('VIP təyin olundu');
       }
     } catch (error) {
       console.error('İlan bilgileri güncellenirken hata:', error);
@@ -215,14 +222,14 @@ function AdDetail() {
   const handleCreateChatRoom = async () => {
     // Kullanıcı giriş yapmamışsa, giriş sayfasına yönlendir
     if (!isAuthenticated) {
-      toast.info('Mesaj göndermek için giriş yapmalısınız');
+      toast.info('giriş etməlisiz');
       navigate('/login', { state: { from: window.location.pathname } });
       return;
     }
     
     // İlanın sahibiyse mesaj gönderemez
     if (ad.isOwner) {
-      toast.info('Kendi ilanınıza mesaj gönderemezsiniz');
+      toast.info('olmaz!');
       return;
     }
     
@@ -234,13 +241,13 @@ function AdDetail() {
       if (response && response.isSucceeded && response.data) {
         // Sohbet odasına git
         navigate(`/messages/${response.data.id}`);
-        toast.success('Sohbet başlatıldı');
+        toast.success('Söhbət başladı');
       } else {
-        toast.error(response?.message || 'Sohbet odası oluşturulamadı');
+        toast.error(response?.message || 'xəta');
       }
     } catch (err) {
       console.error('Sohbet odası oluşturulurken hata oluştu:', err);
-      toast.error('Sohbet odası oluşturulurken bir hata oluştu');
+      toast.error('xəta');
     } finally {
       setIsCreatingChatRoom(false);
     }
@@ -261,17 +268,17 @@ function AdDetail() {
       const response = await adService.changeAdStatus(id, newStatus);
       
       if (response && response.isSucceeded) {
-        toast.success('İlan durumu başarıyla güncellendi');
+        toast.success('güncellendi');
         
         // İlan durumunu güncelle
         setAd(prev => ({ ...prev, adStatus: newStatus }));
         setShowStatusOptions(false);
       } else {
-        toast.error('İlan durumu güncellenirken bir hata oluştu');
+        toast.error('xəta');
       }
     } catch (err) {
       console.error('İlan durumu değiştirilirken hata:', err);
-      toast.error('İlan durumu güncellenirken bir hata oluştu');
+      toast.error('xəta');
     } finally {
       setChangingStatus(false);
     }
@@ -281,17 +288,34 @@ function AdDetail() {
   const getStatusName = (status) => {
     switch (status) {
       case AdStatus.PENDING:
-        return 'Beklemede';
+        return 'Gözləyir';
       case AdStatus.ACTIVE:
-        return 'Aktif';
+        return 'Aktiv';
       case AdStatus.REJECTED:
-        return 'Reddedildi';
-      case AdStatus.SOLD:
-        return 'Satıldı';
+        return 'İmtina edildi';
       case AdStatus.EXPIRED:
-        return 'Süresi Doldu';
+        return 'Müddəti bitib';
       default:
-        return 'Bilinmiyor';
+        return 'Bilinmir';
+    }
+  };
+
+  // İlanı silme fonksiyonu
+  const handleDeleteAd = async () => {
+    if (!window.confirm('Bu elanı silmək istədiyinizə əminsiniz?')) return;
+    setDeleting(true);
+    try {
+      const response = await adService.delete(ad.id);
+      if (response && response.isSucceeded) {
+        toast.success('Elan uğurla silindi!');
+        navigate('/ilanlar');
+      } else {
+        toast.error(response?.message || 'Elan silinmədi!');
+      }
+    } catch (err) {
+      toast.error('Elan silinərkən xəta baş verdi!');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -312,7 +336,7 @@ function AdDetail() {
           <p className="font-medium">{error || 'İlan bulunamadı'}</p>
           <p className="mt-2">
             <Link to="/ilanlar" className="text-red-700 underline">
-              İlanlar sayfasına dön
+              Elanlar səhifəsinə get
             </Link>
           </p>
         </div>
@@ -326,12 +350,12 @@ function AdDetail() {
       <nav className="flex py-3 px-4 text-sm bg-gray-50 rounded-lg mb-6">
         <ol className="inline-flex items-center space-x-1 md:space-x-3">
           <li className="inline-flex items-center">
-            <Link to="/" className="text-gray-700 hover:text-primary">Ana Sayfa</Link>
+            <Link to="/" className="text-gray-700 hover:text-primary">Əsas Səhifə</Link>
           </li>
           <li>
             <div className="flex items-center">
               <FaChevronRight className="text-gray-400 mx-1" />
-              <Link to="/ilanlar" className="text-gray-700 hover:text-primary">İlanlar</Link>
+              <Link to="/ilanlar" className="text-gray-700 hover:text-primary">Elanlar</Link>
             </div>
           </li>
           {ad.category && (
@@ -375,60 +399,20 @@ function AdDetail() {
           {/* İlan Başlığı */}
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <div className="flex flex-wrap justify-between items-center">
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-800 mr-2">{ad.title}</h1>
-                <div className="flex items-center gap-2 mt-2">
+              <div className="flex flex-col w-full">
+                <div className="flex items-center gap-6 flex-wrap">
+                  <h1 className="text-2xl font-bold text-gray-800">{ad.title}</h1>
+                  <span className="text-xl font-bold text-primary">{formatPrice(ad.price)}</span>
                   {ad.isFeatured && (
                     <span className="bg-yellow-400 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
-                      <FaCrown className="h-3 w-3" /> VIP İlan
+                      <FaCrown className="h-3 w-3" /> VIP Elan
                     </span>
                   )}
-                  <span className="text-xl font-bold text-primary">
-                    {formatPrice(ad.price)}
-                  </span>
                 </div>
               </div>
               
               {/* Eylem Butonları - Sağ Üstte */}
-              <div className="flex flex-wrap gap-2">
-                {/* İlanı düzenle butonu sadece admin veya ilan sahibi görebilir */}
-                {(isAdmin || ad.isOwner) && (
-                  <Link 
-                    to={`/ads/edit/${ad.id}`}
-                    className="btn btn-sm btn-outline flex items-center gap-1"
-                  >
-                    <FaEdit className="h-4 w-4" /> Düzenle
-                  </Link>
-                )}
-                
-                {/* VIP Yap butonu - Öne çıkar */}
-                {ad.isOwner && !ad.isFeatured && (
-                  <button 
-                    className="btn btn-sm btn-warning flex items-center gap-1"
-                    onClick={() => setShowFeatureModal(true)}
-                  >
-                    <FaCrown className="h-4 w-4" /> VIP Yap
-                  </button>
-                )}
-                
-                {/* Favorilere Ekleme Butonu */}
-                <button
-                  onClick={() => handleToggleFavorite(ad.id)}
-                  className={`btn btn-sm ${
-                    isFavorited 
-                      ? 'btn-error text-white' 
-                      : 'btn-outline hover:btn-error hover:text-white'
-                  } flex items-center gap-1`}
-                  disabled={ad.isOwner}
-                  title={ad.isOwner ? 'Kendi ilanınızı favorilere ekleyemezsiniz' : ''}
-                >
-                  {isFavorited ? (
-                    <><FaHeart className="h-4 w-4" /></>
-                  ) : (
-                    <><FaRegHeart className="h-4 w-4" /></>
-                  )}
-                </button>
-              </div>
+              {/* (isAdmin || ad.isOwner) için edit ve delete butonları buradan kaldırıldı */}
             </div>
           </div>
           
@@ -450,14 +434,14 @@ function AdDetail() {
                       <button 
                         onClick={prevImage}
                         className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-3 shadow-md hover:bg-white"
-                        aria-label="Önceki resim"
+                        aria-label="Əvvəlki"
                       >
                         <FaArrowLeft className="text-gray-700" />
                       </button>
                       <button 
                         onClick={nextImage}
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-3 shadow-md hover:bg-white"
-                        aria-label="Sonraki resim"
+                        aria-label="Sonraki"
                       >
                         <FaChevronRight className="text-gray-700" />
                       </button>
@@ -466,7 +450,7 @@ function AdDetail() {
                 </div>
               ) : (
                 <div className="aspect-w-16 aspect-h-9 bg-gray-100 flex items-center justify-center h-[400px]">
-                  <span className="text-gray-400">Resim yok</span>
+                  <span className="text-gray-400">Foto yoxdur</span>
                 </div>
               )}
             </div>
@@ -500,7 +484,7 @@ function AdDetail() {
                   <div className="flex items-center">
                     <FaTag className="text-gray-400 mr-2" />
                     <div>
-                      <span className="text-gray-500 text-sm">Kategori:</span>
+                      <span className="text-gray-500 text-sm">Kategoriya:</span>
                       <span className="ml-2 font-medium">{ad.category.name}</span>
                     </div>
                   </div>
@@ -510,7 +494,7 @@ function AdDetail() {
                   <div className="flex items-center">
                     <FaTag className="text-gray-400 mr-2" />
                     <div>
-                      <span className="text-gray-500 text-sm">Alt Kategori:</span>
+                      <span className="text-gray-500 text-sm">Alt Kategoriya:</span>
                       <span className="ml-2 font-medium">{ad.mainCategory.name}</span>
                     </div>
                   </div>
@@ -520,7 +504,7 @@ function AdDetail() {
                   <div className="flex items-center">
                     <FaMapMarkerAlt className="text-gray-400 mr-2" />
                     <div>
-                      <span className="text-gray-500 text-sm">Konum:</span>
+                      <span className="text-gray-500 text-sm">Məkan:</span>
                       <span className="ml-2 font-medium">{ad.location.city}, {ad.location.country}</span>
                     </div>
                   </div>
@@ -529,7 +513,7 @@ function AdDetail() {
                 <div className="flex items-center">
                   <FaTag className="text-gray-400 mr-2" />
                   <div>
-                    <span className="text-gray-500 text-sm">Durum:</span>
+                    <span className="text-gray-500 text-sm">Vəziyyət:</span>
                     <span className="ml-2 font-medium">{ad.isNew ? 'Yeni' : 'İkinci El'}</span>
                   </div>
                 </div>
@@ -538,13 +522,13 @@ function AdDetail() {
               {/* Alt Kategori Değerleri */}
               {ad.adSubCategoryValues && ad.adSubCategoryValues.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-lg font-medium mb-3 text-gray-800">Ek Özellikler</h4>
+                  <h4 className="text-lg font-medium mb-3 text-gray-800">Əlvə Xüsusiyyətlər</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                     {ad.adSubCategoryValues.map((subCatValue) => {
                       // Alt kategori adını bul
                       const subCategoryName = ad.mainCategory?.subCategories?.find(
                         sc => sc.id === subCatValue.subCategoryId
-                      )?.name || 'Özellik';
+                      )?.name || 'Xüsusiyyət';
                       
                       return (
                         <div key={subCatValue.id} className="flex items-start">
@@ -562,7 +546,7 @@ function AdDetail() {
               
               {/* İlan Açıklaması */}
               <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">İlan Açıklaması</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">Açıqlama</h3>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="prose max-w-none">
                     <p className="whitespace-pre-line">{ad.description}</p>
@@ -575,7 +559,7 @@ function AdDetail() {
                 <div className="flex items-center">
                   <FaEye className="text-gray-500 mr-2" />
                   <div>
-                    <span className="text-gray-600 text-sm">Görüntülenme:</span>
+                    <span className="text-gray-600 text-sm">Baxış sayı:</span>
                     <span className="ml-2 font-medium">{ad.viewCount || 0}</span>
                   </div>
                 </div>
@@ -583,7 +567,7 @@ function AdDetail() {
                 <div className="flex items-center">
                   <FaClock className="text-gray-500 mr-2" />
                   <div>
-                    <span className="text-gray-600 text-sm">Yayınlanma:</span>
+                    <span className="text-gray-600 text-sm">Paylaşım tarixi:</span>
                     <span className="ml-2 font-medium">{formatDate(ad.createdAt)}</span>
                   </div>
                 </div>
@@ -591,12 +575,23 @@ function AdDetail() {
                 <div className="flex items-center">
                   <FaMapMarkerAlt className="text-gray-500 mr-2" />
                   <div>
-                    <span className="text-gray-600 text-sm">Lokasyon:</span>
+                    <span className="text-gray-600 text-sm">Məkan:</span>
                     <span className="ml-2 font-medium">
                       {ad.location?.city}, {ad.location?.country}
                     </span>
                   </div>
                 </div>
+                
+                {/* Eğer kendi ilanıysa seçen kullanıcı sayısını göster */}
+                {ad.isOwner && (
+                  <div className="flex items-center">
+                    <FaHeart className="text-pink-500 mr-2" />
+                    <div>
+                      <span className="text-gray-600 text-sm">Seçilmişlərə əlavə edən istifadəçi sayı:</span>
+                      <span className="ml-2 font-medium">{ad.selectorUsersCount ?? 0}</span>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Diğer Eylem Butonları */}
@@ -606,8 +601,31 @@ function AdDetail() {
                     className="btn btn-outline flex items-center gap-1"
                     onClick={() => setShowReportModal(true)}
                   >
-                    <FaFlag className="mr-2" /> İlanı Bildir
+                    <FaFlag className="mr-2" /> Elanı şikayət et
                   </button>
+                )}
+                {/* Edit ve Delete butonları buraya taşındı */}
+                {(isAdmin || ad.isOwner) && (
+                  <>
+                    <Link 
+                      to={`/ads/edit/${ad.id}`}
+                      className="btn btn-outline flex items-center gap-1"
+                    >
+                      <FaEdit className="h-4 w-4" /> Redaktə et
+                    </Link>
+                    <button
+                      className="btn btn-error flex items-center gap-1"
+                      onClick={handleDeleteAd}
+                      disabled={deleting}
+                    >
+                      {deleting ? (
+                        <FaSpinner className="animate-spin h-4 w-4 mr-1" />
+                      ) : (
+                        <FaTimes className="h-4 w-4" />
+                      )}
+                      Sil
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -617,33 +635,21 @@ function AdDetail() {
           {sellerAds.length > 0 && (
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">Satıcının Diğer İlanları</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">Digər Elanlar</h3>
                 
                 {isLoadingSellerAds ? (
                   <div className="flex justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {sellerAds.map(sellerAd => (
-                      <div key={sellerAd.id} className="col-span-1">
-                        <AdCard
-                          ad={sellerAd}
-                          onFavoriteToggle={(id) => handleToggleFavorite(sellerAd.id)}
-                        />
-                      </div>
+                      <AdCard
+                        key={sellerAd.id}
+                        ad={sellerAd}
+                        onFavoriteToggle={() => handleToggleFavorite(sellerAd.id)}
+                      />
                     ))}
-                  </div>
-                )}
-                
-                {sellerAds.length > 0 && ad.appUser && (
-                  <div className="mt-4 text-center">
-                    <Link 
-                      to={`/ilanlar?searchedAppUserId=${ad.appUser.id}`}
-                      className="btn btn-outline btn-wide"
-                    >
-                      Tüm İlanları Gör
-                    </Link>
                   </div>
                 )}
               </div>
@@ -656,7 +662,7 @@ function AdDetail() {
           {/* Satıcı Bilgileri */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 sticky top-4">
             <div className="p-6">
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">Satıcı Bilgileri</h3>
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">Satıcı Məlumatları</h3>
               
               {ad.appUser ? (
                 <div className="space-y-4">
@@ -667,7 +673,7 @@ function AdDetail() {
                     <div>
                       <h4 className="font-medium">{ad.appUser.name}</h4>
                       <p className="text-sm text-gray-500">
-                        Üyelik: {formatDate(ad.appUser.createdAt)}
+                        Üzvlük: {formatDate(ad.appUser.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -698,7 +704,7 @@ function AdDetail() {
                           <div className="flex items-center">
                             <FaPhoneAlt className="text-primary mr-3" />
                             <div>
-                              <span className="text-gray-500 text-sm">Telefon:</span>
+                              <span className="text-gray-500 text-sm">Telefon Nömrəsi:</span>
                               <a 
                                 href={`tel:${ad.appUser.phoneNumber}`} 
                                 className="block font-medium"
@@ -713,7 +719,7 @@ function AdDetail() {
                           <div className="flex items-center">
                             <FaEnvelope className="text-primary mr-3" />
                             <div>
-                              <span className="text-gray-500 text-sm">E-posta:</span>
+                              <span className="text-gray-500 text-sm">E-mail:</span>
                               <a 
                                 href={`mailto:${ad.appUser.email}`} 
                                 className="block font-medium"
@@ -729,51 +735,18 @@ function AdDetail() {
                         className="btn btn-outline w-full"
                         onClick={() => setShowContactInfo(true)}
                       >
-                        İletişim Bilgilerini Göster
+                        Əlaqə Məlumatlarını Göster
                       </button>
                     )}
                   </div>
-                  
-                  {/* Kullanıcının ilanları bağlantısı */}
-                  <div className="pt-3">
-                    <Link 
-                      to={`/ilanlar?searchedAppUserId=${ad.appUser.id}`}
-                      className="btn btn-outline btn-sm w-full"
-                    >
-                      Tüm İlanlarını Gör
-                    </Link>
-                  </div>
                 </div>
               ) : (
-                <p className="text-gray-500">Satıcı bilgileri bulunamadı.</p>
+                <p className="text-gray-500">Məlumatlar tapılmadı.</p>
               )}
             </div>
           </div>
           
-          {/* Güvenlik İpuçları */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">Güvenlik İpuçları</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1.5"></span>
-                  Satıcıyla yüz yüze görüşme ayarlarken güvenli ve halka açık bir yer seçin
-                </li>
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1.5"></span>
-                  Ürünü görmeden para transferi yapmaktan kaçının
-                </li>
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1.5"></span>
-                  Ürünün durumunu, çalışıp çalışmadığını kontrol edin
-                </li>
-                <li className="flex items-start">
-                  <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1.5"></span>
-                  Şüpheli durumlarda ödeme yapmaktan kaçının
-                </li>
-              </ul>
-            </div>
-          </div>
+         
         </div>
       </div>
       
@@ -797,7 +770,7 @@ function AdDetail() {
       {isAdmin && ad && (
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex flex-wrap justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-800">Admin Kontrolleri</h3>
+            <h3 className="text-lg font-semibold text-gray-800">Admin</h3>
             
             <div className="relative">
               <button
@@ -808,11 +781,11 @@ function AdDetail() {
                 {changingStatus ? (
                   <>
                     <FaSpinner className="animate-spin mr-2" />
-                    İşlem Yapılıyor...
+                    Əməliyyat...
                   </>
                 ) : (
                   <>
-                    Durum Değiştir: {getStatusName(ad.adStatus)}
+                    Statusu dəyişdir: {getStatusName(ad.adStatus)}
                   </>
                 )}
               </button>

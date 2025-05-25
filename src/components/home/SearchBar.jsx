@@ -42,7 +42,7 @@ const SearchBar = ({ categories, locations: propLocations }) => {
     const params = new URLSearchParams();
     
     if (searchTerm) {
-      params.append('q', searchTerm);
+      params.append('searchTerm', searchTerm);
     }
     
     if (selectedLocation) {
@@ -66,7 +66,7 @@ const SearchBar = ({ categories, locations: propLocations }) => {
           </div>
           <input
             type="text"
-            placeholder="Ne aramıştınız?"
+            placeholder="Nə axtarırsınız?"
             className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900 placeholder-gray-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -98,7 +98,7 @@ const SearchBar = ({ categories, locations: propLocations }) => {
                       setIsDropdownOpen(false);
                     }}
                   >
-                    Tüm Türkiye
+                    Hamısı
                   </button>
                   
                   {loading ? (

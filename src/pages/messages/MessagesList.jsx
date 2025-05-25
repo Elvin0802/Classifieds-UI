@@ -67,9 +67,45 @@ const MessagesList = () => {
     chatService.ensureConnection().catch(err => {
       console.warn('SignalR bağlantısı başlatılamadı:', err);
     });
-    
+
+    // --- YENİ MESAJ GELİNCE OTOMATİK YENİLEME ---
+    const unsubscribeMessageObserver = chatService.addMessageObserver('*', (message) => {
+      // Sadece ilgili sohbetin unreadCount'unu artır
+      if (message && message.chatRoomId) {
+        setConversations(prevConversations => {
+          let found = false;
+          const updated = prevConversations.map(conv => {
+            if (conv.id === message.chatRoomId) {
+              found = true;
+              // Eğer gönderen mevcut kullanıcı değilse unread artır
+              const currentUserId = user?.id || authStorage.getUserId();
+              if (message.senderId !== currentUserId) {
+                return {
+                  ...conv,
+                  unreadCount: (conv.unreadCount || 0) + 1,
+                  lastMessageAt: message.createdAt || message.timestamp || conv.lastMessageAt
+                };
+              }
+            }
+            return conv;
+          });
+          // Eğer ilgili sohbet yoksa, tam yenileme yap
+          if (!found) {
+            fetchConversations();
+            return prevConversations;
+          }
+          return updated;
+        });
+      } else {
+        // chatRoomId yoksa tam yenileme
+        fetchConversations();
+      }
+    });
+    // --- SON ---
+
     return () => {
       if (unsubscribeConnectionObserver) unsubscribeConnectionObserver();
+      if (unsubscribeMessageObserver) unsubscribeMessageObserver();
     };
   }, []);
 

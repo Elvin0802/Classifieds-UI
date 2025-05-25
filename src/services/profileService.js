@@ -247,6 +247,36 @@ const profileService = {
       console.error('Öne çıkarılmış ilanlar alınırken hata:', error);
       throw error;
     }
+  },
+
+  /**
+   * Kullanıcı adını günceller
+   * @param {string} name - Yeni ad
+   * @returns {Promise<Object>} Sonuç
+   */
+  changeName: async (name) => {
+    try {
+      const response = await apiClient.post(`${PROFILE_URL}/ChangeName`, null, { params: { name } });
+      return response.data;
+    } catch (error) {
+      console.error('Kullanıcı adı güncellenirken hata:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Kullanıcı telefon numarasını günceller
+   * @param {string} number - Yeni telefon numarası
+   * @returns {Promise<Object>} Sonuç
+   */
+  changePhoneNumber: async (number) => {
+    try {
+      const response = await apiClient.post(`${PROFILE_URL}/ChangePhoneNumber`, null, { params: { number } });
+      return response.data;
+    } catch (error) {
+      console.error('Telefon numarası güncellenirken hata:', error);
+      throw error;
+    }
   }
 };
 

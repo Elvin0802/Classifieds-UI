@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { FaHome, FaList, FaMapMarkerAlt, FaFlag, FaTachometerAlt, FaBars, FaTimes, FaClock } from 'react-icons/fa';
+import { FaHome, FaList, FaMapMarkerAlt, FaFlag, FaTachometerAlt, FaBars, FaTimes, FaClock, FaUserSlash } from 'react-icons/fa';
+import { Button } from '../../components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 
 function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -17,101 +19,129 @@ function AdminLayout() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-muted flex">
       {/* Kenar çubuğu (Sidebar) */}
-      <div 
-        className={`bg-gray-800 text-white ${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 ease-in-out`}
+      <aside
+        className={`h-screen sticky top-0 z-30 bg-background border-r border-border flex flex-col items-center py-6 transition-all duration-300 ${isSidebarOpen ? 'w-56' : 'w-16'}`}
       >
-        <div className="p-4 flex items-center justify-between">
-          {isSidebarOpen ? (
-            <h1 className="text-xl font-bold">Admin Panel</h1>
-          ) : (
-            <h1 className="text-xl font-bold">AP</h1>
-          )}
-          <button 
+        <div className="flex items-center justify-between w-full px-4 mb-8">
+          <span className="font-bold text-lg tracking-tight text-primary">{isSidebarOpen ? 'Admin Panel' : 'AP'}</span>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleSidebar}
-            className="text-white hover:text-gray-300 focus:outline-none"
+            className="ml-2"
           >
             {isSidebarOpen ? <FaTimes /> : <FaBars />}
-          </button>
+          </Button>
         </div>
-        
-        <nav className="mt-6">
-          <ul>
-            <li>
-              <Link 
-                to="/admin" 
-                className={`flex items-center p-4 ${isActive('/admin') && !isActive('/admin/') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
-              >
-                <FaTachometerAlt className="mr-4" />
-                {isSidebarOpen && <span>Dashboard</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/admin/categories" 
-                className={`flex items-center p-4 ${isActive('/admin/categories') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
-              >
-                <FaList className="mr-4" />
-                {isSidebarOpen && <span>Kategoriler</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/admin/locations" 
-                className={`flex items-center p-4 ${isActive('/admin/locations') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
-              >
-                <FaMapMarkerAlt className="mr-4" />
-                {isSidebarOpen && <span>Lokasyonlar</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/admin/ads/pending" 
-                className={`flex items-center p-4 ${isActive('/admin/ads/pending') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
-              >
-                <FaClock className="mr-4" />
-                {isSidebarOpen && <span>Bekleyen İlanlar</span>}
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/admin/reports" 
-                className={`flex items-center p-4 ${isActive('/admin/reports') ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
-              >
-                <FaFlag className="mr-4" />
-                {isSidebarOpen && <span>Raporlar</span>}
-              </Link>
-            </li>
-            <li className="mt-8">
-              <Link 
-                to="/" 
-                className="flex items-center p-4 text-gray-400 hover:bg-gray-700"
-              >
-                <FaHome className="mr-4" />
-                {isSidebarOpen && <span>Ana Sayfaya Dön</span>}
-              </Link>
-            </li>
+        <nav className="flex-1 w-full">
+          <ul className="space-y-2">
+            <TooltipProvider>
+              <li>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/admin"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin') && !isActive('/admin/') ? 'bg-accent text-primary' : 'hover:bg-accent/60 text-muted-foreground'}`}
+                    >
+                      <FaTachometerAlt />
+                      {isSidebarOpen && <span>Dashboard</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Dashboard</TooltipContent>
+                </Tooltip>
+              </li>
+              <li>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/admin/categories"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/categories') ? 'bg-accent text-primary' : 'hover:bg-accent/60 text-muted-foreground'}`}
+                    >
+                      <FaList />
+                      {isSidebarOpen && <span>Kategoriyalar</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Kategoriyalar</TooltipContent>
+                </Tooltip>
+              </li>
+              <li>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/admin/locations"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/locations') ? 'bg-accent text-primary' : 'hover:bg-accent/60 text-muted-foreground'}`}
+                    >
+                      <FaMapMarkerAlt />
+                      {isSidebarOpen && <span>Məkanlar</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Məkanlar</TooltipContent>
+                </Tooltip>
+              </li>
+              <li>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/admin/ads/pending"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/ads/pending') ? 'bg-accent text-primary' : 'hover:bg-accent/60 text-muted-foreground'}`}
+                    >
+                      <FaClock />
+                      {isSidebarOpen && <span>Gözləyən Elanlar</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Gözləyən Elanlar</TooltipContent>
+                </Tooltip>
+              </li>
+              <li>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/admin/reports"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/reports') ? 'bg-accent text-primary' : 'hover:bg-accent/60 text-muted-foreground'}`}
+                    >
+                      <FaFlag />
+                      {isSidebarOpen && <span>Şikayətlər</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Şikayətlər</TooltipContent>
+                </Tooltip>
+              </li>
+              <li>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/admin/blocked-users"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/blocked-users') ? 'bg-accent text-primary' : 'hover:bg-accent/60 text-muted-foreground'}`}
+                    >
+                      <FaUserSlash />
+                      {isSidebarOpen && <span>Blocked Users</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Blocked Users</TooltipContent>
+                </Tooltip>
+              </li>
+            </TooltipProvider>
           </ul>
         </nav>
-      </div>
-      
+      </aside>
       {/* Ana içerik */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto">
+      <div className="flex-1 min-h-screen flex flex-col">
         {/* Üst menü (Header) */}
-        <div className="bg-white p-4 shadow-md">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-800">Admin Kontrol Paneli</h2>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Admin</span>
-            </div>
+        <header className="sticky top-0 z-20 bg-background border-b border-border px-6 py-4 flex items-center justify-between shadow-sm">
+          <h2 className="text-xl font-semibold text-primary">Admin Paneli</h2>
+          <div className="flex items-center gap-4">
+            <span className="text-muted-foreground font-medium">Admin</span>
+            <Button asChild variant="outline" size="sm" className="ml-2">
+              <Link to="/">Əsas Səhifəyə Get</Link>
+            </Button>
           </div>
-        </div>
-        
+        </header>
         {/* Sayfa içeriği */}
-        <div className="p-6">
+        <main className="flex-1 p-8 bg-muted/50">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

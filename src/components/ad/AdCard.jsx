@@ -23,8 +23,15 @@ const AdCard = ({ ad, onFavoriteToggle }) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     const now = new Date();
+    // Eğer tarih gelecekteyse, tam tarih göster
+    if (date > now) {
+      return new Intl.DateTimeFormat('az-AZ', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(date);
+    }
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    
     if (diffInDays === 0) {
       return 'Bugün';
     } else if (diffInDays === 1) {
@@ -34,7 +41,8 @@ const AdCard = ({ ad, onFavoriteToggle }) => {
     } else {
       return new Intl.DateTimeFormat('az-AZ', { 
         day: 'numeric', 
-        month: 'long'
+        month: 'numeric',
+        year: 'numeric'
       }).format(date);
     }
   };
@@ -142,7 +150,7 @@ const AdCard = ({ ad, onFavoriteToggle }) => {
               
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3 text-gray-400" />
-                <span>{formatDate(ad.updatedAt)}</span>
+                <span>{formatDate(ad.createdAt)}</span>
               </div>
             </div>
           </div>

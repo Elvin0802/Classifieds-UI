@@ -355,15 +355,15 @@ function CreateAd() {
             }
           }, 1500);
         } else {
-          throw new Error('İlan oluşturma başarısız: ' + (response?.message || 'Bilinmeyen hata'));
+          throw new Error('Elan yaradilmadi: ' + (response?.message || 'xəta'));
         }
       } catch (apiError) {
         console.error('İlan oluşturma API hatası:', apiError);
-        setError(`İlan oluşturulamadı: ${apiError.message}`);
+        setError(`İlan yaradilmadi: ${apiError.message}`);
       }
     } catch (error) {
       console.error('İlan oluşturulurken hata:', error);
-      setError('İlan oluşturulamadı, lütfen tekrar deneyin');
+      setError('İlan yaradilmadi');
     } finally {
       setPageLoading(false);
     }
@@ -394,7 +394,7 @@ function CreateAd() {
           onChange={(e) => handleSubCategoryValueChange(subCategoryId, e.target.value)}
           className="select select-bordered w-full"
         >
-          <option value="" disabled>Seçiniz</option>
+          <option value="" disabled>Seçin</option>
           {options.map((option, idx) => (
             <option key={idx} value={typeof option === 'object' ? option.value : option}>
               {typeof option === 'object' ? option.value : option}
@@ -411,7 +411,7 @@ function CreateAd() {
         value={value || ''}
         onChange={(e) => handleSubCategoryValueChange(subCategoryId, e.target.value)}
         className="input input-bordered w-full"
-        placeholder={`${name} değerini girin`}
+        placeholder={`${name} daxil edin`}
       />
     );
   };
@@ -421,7 +421,7 @@ function CreateAd() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p className="text-gray-600">Kimlik doğrulama kontrol ediliyor...</p>
+        <p className="text-gray-600">Doğrulama yoxlanılır...</p>
       </div>
     );
   }
@@ -431,8 +431,8 @@ function CreateAd() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <p className="text-xl font-semibold text-gray-700 mb-4">Erişim Engellendi</p>
-        <p className="text-gray-600 mb-6">İlan oluşturmak için giriş yapmalısınız.</p>
+        <p className="text-xl font-semibold text-gray-700 mb-4">Əngəlləndiniz</p>
+        <p className="text-gray-600 mb-6">Elan yaratmaq üçün daxil olmalısınız.</p>
         <button
           onClick={() => navigate('/login', { state: { from: window.location.pathname } })}
           className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition"
@@ -448,12 +448,12 @@ function CreateAd() {
     return (
       <div className="max-w-4xl mx-auto p-4">
         <div className="card bg-base-100 shadow-xl p-8 text-center">
-          <h2 className="text-2xl font-bold text-success mb-4">İlan Başarıyla Oluşturuldu!</h2>
-          <p className="mb-4">İlanınız sisteme başarıyla kaydedildi.</p>
+          <h2 className="text-2xl font-bold text-success mb-4">Elan Yaradildi!</h2>
+          <p className="mb-4">Elan Əlavə Olundu</p>
           <div className="flex justify-center">
             <span className="loading loading-spinner loading-lg text-primary"></span>
           </div>
-          <p className="mt-4 text-sm text-gray-500">İlan detay sayfasına yönlendiriliyorsunuz...</p>
+          <p className="mt-4 text-sm text-gray-500">Siz təfərrüatlar səhifəsinə yönləndirilirsiniz....</p>
         </div>
       </div>
     );
@@ -462,12 +462,12 @@ function CreateAd() {
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Yeni İlan Oluştur</h1>
+        <h1 className="text-2xl font-bold">Yeni Elan Yarat</h1>
         <button 
           onClick={() => navigate(-1)}
           className="btn btn-outline btn-sm"
         >
-          <FaArrowLeft className="mr-2" /> Geri Dön
+          <FaArrowLeft className="mr-2" /> Geri
         </button>
       </div>
       
@@ -480,13 +480,13 @@ function CreateAd() {
       
       <form onSubmit={handleSubmit} className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title text-lg border-b pb-2 mb-4">İlan Bilgileri</h2>
+          <h2 className="card-title text-lg border-b pb-2 mb-4">Elan Məlumatları</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Başlık */}
             <div className="form-control col-span-full">
               <label className="label">
-                <span className="label-text font-medium">İlan Başlığı<span className="text-red-500">*</span></span>
+                <span className="label-text font-medium">Elan Başlığı<span className="text-red-500">*</span></span>
               </label>
               <input
                 type="text"
@@ -494,7 +494,7 @@ function CreateAd() {
                 value={formData.title}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="İlan başlığını girin"
+                placeholder="Elan Başlığı"
                 required
               />
             </div>
@@ -502,14 +502,14 @@ function CreateAd() {
             {/* Açıklama */}
             <div className="form-control col-span-full">
               <label className="label">
-                <span className="label-text font-medium">Açıklama<span className="text-red-500">*</span></span>
+                <span className="label-text font-medium">Açıqlama<span className="text-red-500">*</span></span>
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 className="textarea textarea-bordered h-24"
-                placeholder="İlan açıklamasını girin"
+                placeholder="Elan açıqlamasını yazın"
                 required
               ></textarea>
             </div>
@@ -517,7 +517,7 @@ function CreateAd() {
             {/* Fiyat ve Durumu */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Fiyat (TL)<span className="text-red-500">*</span></span>
+                <span className="label-text font-medium">Qiymət (AZN)<span className="text-red-500">*</span></span>
               </label>
               <input
                 type="number"
@@ -525,7 +525,7 @@ function CreateAd() {
                 value={formData.price}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Fiyat"
+                placeholder="Qiymət"
                 min="0"
                 step="0.01"
                 required
@@ -534,7 +534,7 @@ function CreateAd() {
             
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Ürün Durumu</span>
+                <span className="label-text font-medium">Məhsulun Vəziyyəti</span>
               </label>
               <div className="flex items-center space-x-4 mt-2">
                 <label className="cursor-pointer label justify-start gap-2">
@@ -551,13 +551,13 @@ function CreateAd() {
             </div>
           </div>
           
-          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Kategori Bilgileri</h2>
+          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Kategoriya Məlumatlları</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Kategori */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Kategori<span className="text-red-500">*</span></span>
+                <span className="label-text font-medium">Kategoriya<span className="text-red-500">*</span></span>
               </label>
               <select
                 name="categoryId"
@@ -566,7 +566,7 @@ function CreateAd() {
                 className="select select-bordered w-full"
                 required
               >
-                <option value="" disabled>Kategori Seçin</option>
+                <option value="" disabled>Kategoriya Seçin</option>
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>{category.name}</option>
                 ))}
@@ -576,7 +576,7 @@ function CreateAd() {
             {/* Ana Kategori */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Ana Kategori<span className="text-red-500">*</span></span>
+                <span className="label-text font-medium">Əsas Kategoriya<span className="text-red-500">*</span></span>
               </label>
               <select
                 name="mainCategoryId"
@@ -586,14 +586,14 @@ function CreateAd() {
                 disabled={!formData.categoryId || mainCategories.length === 0}
                 required
               >
-                <option value="" disabled>Ana Kategori Seçin</option>
+                <option value="" disabled>Əsas Kategoriya Seçin</option>
                 {mainCategories.map(mainCategory => (
                   <option key={mainCategory.id} value={mainCategory.id}>{mainCategory.name}</option>
                 ))}
               </select>
               {formData.categoryId && mainCategories.length === 0 && (
                 <label className="label">
-                  <span className="label-text-alt text-warning">Bu kategoride ana kategori bulunmamaktadır</span>
+                  <span className="label-text-alt text-warning">Əsas kategoriya yoxdur</span>
                 </label>
               )}
             </div>
@@ -601,7 +601,7 @@ function CreateAd() {
             {/* Alt Kategori Değerleri */}
             {formData.subCategoryValues.length > 0 && (
               <div className="col-span-full mt-2">
-                <h3 className="font-medium mb-2">Alt Kategori Özellikleri</h3>
+                <h3 className="font-medium mb-2">Alt Kategoriya Xüsusiyyətləri</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {formData.subCategoryValues.map(subCategory => (
                     <div className="form-control" key={subCategory.subCategoryId}>
@@ -619,13 +619,13 @@ function CreateAd() {
             )}
           </div>
           
-          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Konum Bilgisi</h2>
+          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Məkan Məlumatlları</h2>
           
           <div className="grid grid-cols-1 gap-4">
             {/* Lokasyon */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Lokasyon<span className="text-red-500">*</span></span>
+                <span className="label-text font-medium">Məkan<span className="text-red-500">*</span></span>
               </label>
               <select
                 name="locationId"
@@ -634,7 +634,7 @@ function CreateAd() {
                 className="select select-bordered w-full"
                 required
               >
-                <option value="" disabled>Lokasyon Seçin</option>
+                <option value="" disabled>Məkan Seçin</option>
                 {locations.map(location => (
                   <option key={location.id} value={location.id}>
                     {location.city}, {location.country}
@@ -644,11 +644,11 @@ function CreateAd() {
             </div>
           </div>
           
-          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Resimler</h2>
+          <h2 className="card-title text-lg border-b pb-2 mt-6 mb-4">Fotolar</h2>
           
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">İlan Resimleri<span className="text-red-500">*</span></span>
+              <span className="label-text font-medium">Elan Fotoları<span className="text-red-500">*</span></span>
               <span className="label-text-alt">{formData.images.length}/5</span>
             </label>
             
@@ -659,7 +659,7 @@ function CreateAd() {
                   <div key={index} className="relative rounded overflow-hidden border border-gray-200 h-24">
                     <img 
                       src={src} 
-                      alt={`İlan görseli ${index + 1}`} 
+                      alt={`Elan Fotosu ${index + 1}`} 
                       className="w-full h-full object-cover"
                     />
                     <button
@@ -671,7 +671,7 @@ function CreateAd() {
                     </button>
                     {index === 0 && (
                       <div className="absolute bottom-0 left-0 right-0 bg-primary text-white text-xs py-0.5 text-center">
-                        Ana Görsel
+                        Əsas Foto
                       </div>
                     )}
                   </div>
@@ -683,7 +683,7 @@ function CreateAd() {
             {formData.images.length < 5 && (
               <div className="mt-2">
                 <label className="btn btn-outline btn-block">
-                  <FaUpload className="mr-2" /> Resim Ekle
+                  <FaUpload className="mr-2" /> Foto əlavə et
                   <input
                     type="file"
                     accept="image/*"
@@ -693,7 +693,7 @@ function CreateAd() {
                   />
                 </label>
                 <p className="text-xs text-gray-500 mt-1 text-center">
-                  En fazla 5 adet resim ekleyebilirsiniz
+                  max 5 foto ola bilər
                 </p>
               </div>
             )}
@@ -706,7 +706,7 @@ function CreateAd() {
               onClick={() => navigate(-1)}
               disabled={pageLoading}
             >
-              İptal
+              Ləğv et
             </button>
             <button 
               type="submit" 
@@ -716,11 +716,11 @@ function CreateAd() {
               {pageLoading ? (
                 <>
                   <span className="loading loading-spinner loading-xs"></span>
-                  İlan Oluşturuluyor...
+                  Elan yaradılır...
                 </>
               ) : (
                 <>
-                  <FaSave className="mr-2" /> İlanı Yayınla
+                  <FaSave className="mr-2" /> Elanı Paylaş
                 </>
               )}
             </button>

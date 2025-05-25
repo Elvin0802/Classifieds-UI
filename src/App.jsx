@@ -24,6 +24,7 @@ import AdDetail from './pages/ads/AdDetail';
 import CreateAd from './pages/ads/CreateAd';
 import EditAd from './pages/ads/EditAd';
 import Profile from './pages/profile/Profile';
+import EditProfile from './pages/profile/EditProfile';
 import SelectedAds from './pages/ads/SelectedAds';
 import NotFound from './pages/NotFound';
 
@@ -48,6 +49,8 @@ import CreateLocation from './pages/admin/locations/CreateLocation';
 import AdminPendingAds from './pages/admin/ads/AdminPendingAds';
 import ReportsList from './pages/admin/reports/ReportsList';
 import ReportDetail from './pages/admin/reports/ReportDetail';
+import AdminCategoryDetail from './pages/admin/categories/AdminCategoryDetail';
+import BlockedUsers from './pages/admin/BlockedUsers';
 
 // Services
 import authService from './services/authService';
@@ -308,6 +311,11 @@ function AppContent() {
               <Profile />
             </PrivateRoute>
           } />
+          <Route path="/profile/edit" element={
+            <PrivateRoute>
+              <EditProfile />
+            </PrivateRoute>
+          } />
           <Route path="/profil" element={
             <Navigate to="/profile" replace />
           } />
@@ -326,6 +334,7 @@ function AppContent() {
           
           {/* Categories Management Routes */}
           <Route path="categories" element={<AdminCategories />} />
+          <Route path="categories/:id" element={<AdminCategoryDetail />} />
           <Route path="kategoriler" element={<Navigate to="/admin/categories" replace />} />
           
           <Route path="categories/create-main" element={<CreateMainCategory />} />
@@ -344,6 +353,7 @@ function AppContent() {
           {/* Reports Management Routes */}
           <Route path="reports" element={<ReportsList />} />
           <Route path="reports/:id" element={<ReportDetail />} />
+          <Route path="blocked-users" element={<BlockedUsers />} />
           
           {/* Admin 404 Route */}
           <Route path="*" element={<NotFound />} />

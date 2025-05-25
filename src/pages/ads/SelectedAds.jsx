@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaStar, FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import profileService from '../../services/profileService';
+import AdCard from '../../components/ad/AdCard';
 
 const SelectedAds = () => {
   // State tanımlamaları
@@ -37,11 +38,11 @@ const SelectedAds = () => {
           });
         } else {
           setAds([]);
-          setError('Seçilmiş ilanlar alınamadı');
+          setError('al;nmad;');
         }
       } catch (error) {
         console.error('Seçilmiş ilanlar alınırken hata:', error);
-        setError('Seçilmiş ilanlar alınırken bir hata oluştu');
+        setError('xəta');
       } finally {
         setLoading(false);
       }
@@ -103,7 +104,7 @@ const SelectedAds = () => {
           onClick={() => paginationInfo.pageNumber > 1 && handlePageChange(paginationInfo.pageNumber - 1)}
           disabled={paginationInfo.pageNumber === 1}
         >
-          <FaChevronLeft className="mr-1" /> Önceki
+          <FaChevronLeft className="mr-1" /> Öncəki
         </button>
         {items}
         <button
@@ -113,7 +114,7 @@ const SelectedAds = () => {
           onClick={() => paginationInfo.pageNumber < paginationInfo.totalPages && handlePageChange(paginationInfo.pageNumber + 1)}
           disabled={paginationInfo.pageNumber === paginationInfo.totalPages}
         >
-          Sonraki <FaChevronRight className="ml-1" />
+          Sonrakı <FaChevronRight className="ml-1" />
         </button>
       </div>
     );
@@ -123,7 +124,7 @@ const SelectedAds = () => {
     return (
       <div className="container mx-auto py-5 text-center">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-        <p className="mt-3">Seçilmiş ilanlar yükleniyor...</p>
+        <p className="mt-3">Seçilmiş elanlar yüklənir...</p>
       </div>
     );
   }
@@ -131,7 +132,7 @@ const SelectedAds = () => {
   return (
     <div className="container mx-auto py-4 px-4">
       <h2 className="mb-4 flex items-center text-2xl font-bold">
-        <FaStar className="text-yellow-500 mr-2" /> Seçilmiş İlanlar
+        <FaStar className="text-yellow-500 mr-2" /> Seçilmiş Elanlar
       </h2>
       
       {error && (
@@ -147,7 +148,7 @@ const SelectedAds = () => {
             <div className="grid md:grid-cols-4 gap-4 items-end">
               <div className="md:col-span-3">
                 <label className="block text-gray-700 text-sm font-medium mb-2">
-                  <FaSearch className="inline mr-1" /> İlan Ara
+                  <FaSearch className="inline mr-1" /> Elan Axtar
                 </label>
                 <input
                   type="text"
@@ -163,7 +164,7 @@ const SelectedAds = () => {
                   type="submit" 
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded flex items-center justify-center"
                 >
-                  <FaSearch className="mr-1" /> Ara
+                  <FaSearch className="mr-1" /> Axtar
                 </button>
               </div>
             </div>
@@ -174,50 +175,13 @@ const SelectedAds = () => {
       {/* İlan Listesi */}
       {ads.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {ads.map(ad => (
-              <div key={ad.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full">
-                <div className="relative">
-                  {ad.mainImageUrl ? (
-                    <img 
-                      src={ad.mainImageUrl} 
-                      alt={ad.title}
-                      className="h-48 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-48 w-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-gray-400">Resim Yok</span>
-                    </div>
-                  )}
-                  <div className="absolute top-0 right-0 m-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      <FaStar className="mr-1" /> Seçilmiş İlan
-                    </span>
-                  </div>
-                </div>
-                <div className="p-4 flex-grow">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">{ad.title}</h3>
-                  <p className="text-gray-900 font-bold mb-2">
-                    {ad.price.toLocaleString('tr-TR')} ₺
-                  </p>
-                  <p className="text-gray-500 text-sm">
-                    {ad.locationCityName && <span>{ad.locationCityName}</span>}
-                    {ad.updatedAt && (
-                      <span className="ml-2">
-                        {new Date(ad.updatedAt).toLocaleDateString('tr-TR')}
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="p-4 border-t border-gray-200">
-                  <Link 
-                    to={`/ads/${ad.id}`} 
-                    className="w-full block text-center bg-white hover:bg-gray-50 text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded transition-colors"
-                  >
-                    İlanı Görüntüle
-                  </Link>
-                </div>
-              </div>
+              <AdCard
+                key={ad.id}
+                ad={ad}
+                // Favori işlemleri için gerekirse prop eklenebilir
+              />
             ))}
           </div>
           
@@ -226,7 +190,7 @@ const SelectedAds = () => {
         </>
       ) : (
         <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-          Seçilmiş ilan bulunamadı.
+          Seçilmiş Elan tapılmadı
         </div>
       )}
     </div>

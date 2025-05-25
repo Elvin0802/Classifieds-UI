@@ -122,11 +122,6 @@ const adService = {
         console.log('Kullanıcı ID eklendi:', userId);
       }
       
-      // isFeatured parametresi için her zaman boolean değer gönder
-      if (params.isFeatured !== undefined) {
-        apiParams.isFeatured = Boolean(params.isFeatured);
-      }
-      
       // Tüm parametreleri eksiksiz gönder
       // Null olan parametreleri de gönder
       Object.keys(defaultValues).forEach(key => {
@@ -258,14 +253,32 @@ const adService = {
    * // Örnek veri yapısı
    * {
    *   id: "guid",
+   *   title: "Yeni başlık",
    *   description: "Yeni açıklama",
    *   price: 1500,
-   *   isNew: false
+   *   isNew: false,
+   *   categoryId: "guid",
+   *   mainCategoryId: "guid",
+   *   locationId: "guid",
+   *   subCategoryValues: [
+   *     { subCategoryId: "guid", value: "değer" }
+   *   ]
    * }
    */
   update: async (adData) => {
     try {
-      const response = await apiClient.post(`${ADS_URL}/Update`, adData);
+      // subCategoryValues varsa, SubCategoryValuesJson olarak gönder
+      let dataToSend = { ...adData };
+      if (Array.isArray(adData.subCategoryValues)) {
+        dataToSend.SubCategoryValuesJson = JSON.stringify(
+          adData.subCategoryValues.map(item => ({
+            SubCategoryId: item.subCategoryId,
+            Value: item.value
+          }))
+        );
+        delete dataToSend.subCategoryValues;
+      }
+      const response = await apiClient.post(`${ADS_URL}/Update`, dataToSend);
       return response.data;
     } catch (error) {
       console.error('İlan güncellenirken hata:', error);
@@ -281,7 +294,6 @@ const adService = {
   updateWithImages: async (formData) => {
     try {
       console.log('updateWithImages fonksiyonu çağrıldı');
-      
       // FormData içeriğini logla
       console.log('FormData içeriği (adService):');
       for (let pair of formData.entries()) {
@@ -289,17 +301,14 @@ const adService = {
           pair[0] === 'SubCategoryValuesJson' ? JSON.parse(pair[1]) : 
           typeof pair[1] === 'string' && pair[1].length < 100 ? pair[1] : '[Dosya veya uzun içerik]');
       }
-      
       // API isteği gönder
       const response = await apiClient.post(`${ADS_URL}/Update`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
       // Yanıtı logla
       console.log('API yanıtı:', response.status, response.data);
-      
       // Axios response formatını döndür
       return {
         status: response.status,
@@ -327,8 +336,8 @@ const adService = {
    */
   delete: async (adId) => {
     try {
-      const response = await apiClient.post(`${ADS_URL}/Delete`, {
-        id: adId
+      const response = await apiClient.delete(`${ADS_URL}/Delete`, {
+        params: { id: adId }
       });
       return response.data;
     } catch (error) {
@@ -344,13 +353,26 @@ const adService = {
    */
   selectAd: async (adId) => {
     try {
+      // Kullanıcı giriş yapmış mı kontrol et
+      const isLoggedIn = authStorage.getIsLogin();
+      if (!isLoggedIn) {
+        console.log('Kullanıcı giriş yapmamış, favori işlemi yapılamaz');
+        return { 
+          isSucceeded: false, 
+          message: 'Favorilere eklemek için giriş yapmalısınız'
+        };
+      }
+      
       const response = await apiClient.post(`${ADS_URL}/SelectAd`, {
         selectAdId: adId
       });
       return response.data;
     } catch (error) {
       console.error('İlan seçilirken hata:', error);
-      throw error;
+      return { 
+        isSucceeded: false, 
+        message: error.response?.data?.message || 'İşlem başarısız oldu'
+      };
     }
   },
   
@@ -361,13 +383,26 @@ const adService = {
    */
   unselectAd: async (adId) => {
     try {
+      // Kullanıcı giriş yapmış mı kontrol et
+      const isLoggedIn = authStorage.getIsLogin();
+      if (!isLoggedIn) {
+        console.log('Kullanıcı giriş yapmamış, favori işlemi yapılamaz');
+        return { 
+          isSucceeded: false, 
+          message: 'Favorilerden çıkarmak için giriş yapmalısınız'
+        };
+      }
+      
       const response = await apiClient.post(`${ADS_URL}/UnselectAd`, {
         selectAdId: adId
       });
       return response.data;
     } catch (error) {
       console.error('İlan seçimi kaldırılırken hata:', error);
-      throw error;
+      return { 
+        isSucceeded: false, 
+        message: error.response?.data?.message || 'İşlem başarısız oldu'
+      };
     }
   },
   

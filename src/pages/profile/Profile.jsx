@@ -19,6 +19,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Label } from '../../components/ui/label';
 import { Separator } from '../../components/ui/separator';
 import { cn } from '../../components/ui/utils';
+import AdCard from '../../components/ad/AdCard';
 
 const Profile = () => {
   // State tanımlamaları
@@ -380,55 +381,13 @@ const Profile = () => {
                         )}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {ads.map((ad) => (
-                          <Card key={ad.id} className="overflow-hidden">
-                            <div className="aspect-video relative bg-muted">
-                              {ad.mainImageUrl ? (
-                                <img 
-                                  src={ad.mainImageUrl} 
-                                  alt={ad.title} 
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-muted">
-                                  <FileText className="h-12 w-12 text-muted-foreground" />
-                                </div>
-                              )}
-                              {getStatusBadge(ad) && (
-                                <div className="absolute top-2 right-2">
-                                  {getStatusBadge(ad)}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <CardContent className="p-4">
-                              <h3 className="font-semibold text-lg line-clamp-1">{ad.title}</h3>
-                              
-                              <div className="flex justify-between items-center mt-2">
-                                <span className="font-bold text-primary">{ad.price} TL</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(ad.createdAt)}
-                                </span>
-                              </div>
-                              
-                              <div className="mt-4 flex items-center gap-2">
-                                <Button variant="outline" size="sm" className="flex-1 h-8 gap-1" asChild>
-                                  <Link to={`/ads/${ad.id}`}>
-                                    <Eye className="h-3.5 w-3.5" /> Bax
-                                  </Link>
-                                </Button>
-                                
-                                {activeTab === 'active' && (
-                                  <Button variant="outline" size="sm" className="flex-1 h-8 gap-1" asChild>
-                                    <Link to={`/ads/edit/${ad.id}`}>
-                                      <Pencil className="h-3.5 w-3.5" /> Redaktə et
-                                    </Link>
-                                  </Button>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
+                          <AdCard
+                            key={ad.id}
+                            ad={ad}
+                            // Favori işlemleri için gerekirse prop eklenebilir
+                          />
                         ))}
                       </div>
                     )}

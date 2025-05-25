@@ -28,7 +28,7 @@ function CreateSubCategory() {
         setMainCategories(response.data.items || []);
       } catch (error) {
         console.error('Ana kategoriler alınırken hata:', error);
-        toast.error('Ana kategoriler yüklenirken bir hata oluştu.');
+        toast.error('xəta');
       }
     };
     
@@ -54,7 +54,7 @@ function CreateSubCategory() {
   // Yeni seçenek ekle
   const handleAddOption = () => {
     if (!newOption.trim()) {
-      toast.warning('Boş seçenek ekleyemezsiniz.');
+      toast.warning('boş olmaz');
       return;
     }
 
@@ -79,7 +79,7 @@ function CreateSubCategory() {
 
     // Select tipi seçilmişse ve seçenek yoksa hata ver
     if (parseInt(formData.type) === 1 && formData.options.length === 0) {
-      toast.error('Seçim tipi için en az bir seçenek eklemelisiniz.');
+      toast.error('ən az birini seçin');
       return;
     }
     
@@ -98,11 +98,11 @@ function CreateSubCategory() {
       }
 
       await categoryService.createSubCategory(apiData);
-      toast.success('Alt kategori başarıyla oluşturuldu.');
+      toast.success('yaradıldı');
       navigate('/admin/categories');
     } catch (error) {
       console.error('Alt kategori oluşturulurken hata:', error);
-      toast.error('Alt kategori oluşturulamadı. Lütfen tekrar deneyin.');
+      toast.error('xəta');
     } finally {
       setLoading(false);
     }
@@ -111,12 +111,12 @@ function CreateSubCategory() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Yeni Alt Kategori Oluştur</h1>
+        <h1 className="text-2xl font-bold">Yeni Alt Kategoriya Yarat</h1>
         <button 
           onClick={() => navigate('/admin/categories')}
           className="btn btn-outline btn-sm"
         >
-          <FaArrowLeft className="mr-2" /> Geri Dön
+          <FaArrowLeft className="mr-2" /> Geri
         </button>
       </div>
       
@@ -126,7 +126,7 @@ function CreateSubCategory() {
             {/* Alt Kategori Adı */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Alt Kategori Adı*</span>
+                <span className="label-text font-medium">Alt Kategoriya Adı*</span>
               </label>
               <input
                 type="text"
@@ -142,7 +142,7 @@ function CreateSubCategory() {
             {/* Ana Kategori */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Ana Kategori*</span>
+                <span className="label-text font-medium">Əsas Kategoriya*</span>
               </label>
               <select
                 name="mainCategoryId"
@@ -151,7 +151,7 @@ function CreateSubCategory() {
                 className="select select-bordered"
                 required
               >
-                <option value="" disabled>Ana kategori seçin</option>
+                <option value="" disabled>Əsas kategoriya seçin</option>
                 {mainCategories.map(mainCategory => (
                   <option key={mainCategory.id} value={mainCategory.id}>
                     {mainCategory.name}
@@ -163,7 +163,7 @@ function CreateSubCategory() {
             {/* Tip Seçimi */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Veri Tipi*</span>
+                <span className="label-text font-medium">Tipi*</span>
               </label>
               <select
                 name="type"
@@ -172,13 +172,13 @@ function CreateSubCategory() {
                 className="select select-bordered"
                 required
               >
-                <option value="0">Sayı (Number)</option>
+                <option value="0">Ədəd (Number)</option>
                 <option value="1">Seçim (Select)</option>
-                <option value="2">Metin (Text)</option>
+                <option value="2">Mətn (Text)</option>
               </select>
               <label className="label">
                 <span className="label-text-alt text-gray-500">
-                  Alt kategori için kullanılacak veri tipini seçin
+                  Məlumat Tipini Seçin
                 </span>
               </label>
             </div>
@@ -193,11 +193,11 @@ function CreateSubCategory() {
                   onChange={handleChange}
                   className="checkbox checkbox-primary"
                 />
-                <span className="label-text font-medium">Zorunlu</span>
+                <span className="label-text font-medium">Məcburi</span>
               </label>
               <label className="label mt-2">
                 <span className="label-text-alt text-gray-500">
-                  Bu alt kategori ilan oluşturulurken zorunlu mu olsun?
+                  Bu Alt Kategoriya Məcburi Olsun?
                 </span>
               </label>
             </div>
@@ -206,7 +206,7 @@ function CreateSubCategory() {
             {showOptions && (
               <div className="form-control md:col-span-2">
                 <label className="label">
-                  <span className="label-text font-medium">Seçenekler*</span>
+                  <span className="label-text font-medium">Seçimlər*</span>
                 </label>
                 
                 <div className="flex gap-2 mb-2">
@@ -222,17 +222,17 @@ function CreateSubCategory() {
                     onClick={handleAddOption}
                     className="btn btn-primary"
                   >
-                    <FaPlus /> Ekle
+                    <FaPlus /> Əlavə et
                   </button>
                 </div>
                 
                 {formData.options.length === 0 ? (
                   <div className="alert alert-warning">
-                    Henüz seçenek eklenmedi. Seçim tipi için en az bir seçenek eklemelisiniz.
+                    Hələ seçim yoxdur, yenisini əlavə edin.
                   </div>
                 ) : (
                   <div className="mt-2">
-                    <p className="text-sm mb-2">Eklenen Seçenekler:</p>
+                    <p className="text-sm mb-2">Əlavə edilən seçimlər:</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {formData.options.map((option, index) => (
                         <div key={index} className="flex justify-between items-center bg-gray-100 p-2 rounded">
@@ -264,7 +264,7 @@ function CreateSubCategory() {
               ) : (
                 <FaSave className="mr-2" />
               )}
-              Alt Kategori Oluştur
+              Alt Kategoriya Yarat
             </button>
           </div>
         </form>

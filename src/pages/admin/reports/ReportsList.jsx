@@ -29,43 +29,35 @@ const ReportsList = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [filter, setFilter] = useState({
     status: '',
-    reason: '',
-    searchTerm: ''
+    reason: ''
   });
+  const [allReports, setAllReports] = useState([]);
 
   useEffect(() => {
     fetchReports();
-  }, [currentPage, pageSize]);
+  }, []);
 
   const fetchReports = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // API üzerinden raporları getir
-      const response = await reportService.getAllReports(filter.status || null);
-      
+      // API üzerinden TÜM raporları getir
+      const response = await reportService.getAllReports();
       if (response && response.isSucceeded) {
-        // API yanıtından verileri ayıkla
-        const { items, pageNumber, pageSize, totalCount, totalPages } = response.data || {};
-        
+        const { items } = response.data || {};
+        setAllReports(items || []);
         setReports(items || []);
-        setCurrentPage(pageNumber || 1);
-        setPageSize(pageSize || 10);
-        setTotalCount(totalCount || 0);
-        setTotalPages(totalPages || 1);
+        setCurrentPage(1);
       } else {
-        setError(response?.message || 'Raporlar alınırken bir hata oluştu');
-        toast.error(response?.message || 'Raporlar alınırken bir hata oluştu');
+        setError(response?.message || 'xəta');
+        toast.error(response?.message || 'xəta');
       }
     } catch (err) {
       console.error('Raporlar yüklenirken hata:', err);
-      setError('Raporlar yüklenirken bir hata oluştu');
-      toast.error('Raporlar yüklenirken bir hata oluştu');
+      setError('xəta');
+      toast.error('xəta');
     } finally {
       setLoading(false);
     }
@@ -77,40 +69,50 @@ const ReportsList = () => {
       ...prev,
       [name]: value
     }));
+    setCurrentPage(1);
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setCurrentPage(1); // Aramada ilk sayfaya dön
-    fetchReports();
+  // Filtreleme sadece frontend'de yapılacak
+  useEffect(() => {
+    let filtered = allReports;
+    if (filter.status !== '') {
+      filtered = filtered.filter(r => String(r.status) === String(filter.status));
+    }
+    if (filter.reason !== '') {
+      filtered = filtered.filter(r => String(r.reason) === String(filter.reason));
+    }
+    setReports(filtered);
+    setCurrentPage(1);
+  }, [filter, allReports]);
+
+  const resetFilters = () => {
+    setFilter({
+      status: '',
+      reason: ''
+    });
+    setCurrentPage(1);
   };
+
+  // Sayfalama işlemi frontend'de
+  const totalCount = reports.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const paginatedReports = reports.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handlePageChange = (pageNumber) => {
     if (pageNumber < 1 || pageNumber > totalPages) return;
     setCurrentPage(pageNumber);
   };
 
-  const resetFilters = () => {
-    setFilter({
-      status: '',
-      reason: '',
-      searchTerm: ''
-    });
-    setCurrentPage(1);
-    // Filtreleri sıfırladıktan sonra veriyi yenile
-    fetchReports();
-  };
-
   const getStatusBadge = (status) => {
     switch (status) {
       case ReportStatus.PENDING:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><FaClock className="mr-1" /> Beklemede</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><FaClock className="mr-1" /> Gözləyir</span>;
       case ReportStatus.UNDER_REVIEW:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><FaSyncAlt className="mr-1" /> İnceleniyor</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><FaSyncAlt className="mr-1" /> Nəzərdən keçirilir</span>;
       case ReportStatus.RESOLVED:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><FaCheck className="mr-1" /> Çözüldü</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><FaCheck className="mr-1" /> Həll olunub</span>;
       case ReportStatus.REJECTED:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><FaBan className="mr-1" /> Reddedildi</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><FaBan className="mr-1" /> Rədd olunub</span>;
       default:
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Bilinmiyor</span>;
     }
@@ -119,28 +121,28 @@ const ReportsList = () => {
   const getReasonText = (reason) => {
     switch (reason) {
       case ReportReason.INAPPROPRIATE:
-        return 'Uygunsuz İçerik';
+        return 'Uyğun olmayan Məzmun';
       case ReportReason.MISLEADING:
-        return 'Yanıltıcı Bilgi';
+        return 'Yanlış məlumat';
       case ReportReason.FRAUDULENT:
-        return 'Dolandırıcılık';
+        return 'Fırıldaqçılıq';
       case ReportReason.DUPLICATE:
-        return 'Mükerrer İlan';
+        return 'Dublikat Elan';
       case ReportReason.WRONG_CATEGORY:
-        return 'Yanlış Kategori';
+        return 'Səhv Kateqoriya';
       case ReportReason.SPAM:
         return 'Spam';
       case ReportReason.OTHER:
-        return 'Diğer';
+        return 'Diger';
       default:
-        return 'Bilinmiyor';
+        return 'Bilinmir';
     }
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('tr-TR', {
+    return new Intl.DateTimeFormat('az-AZ', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -152,13 +154,13 @@ const ReportsList = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Rapor Yönetimi</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Şikayət İdarəetməsi</h1>
         <button 
           onClick={() => fetchReports()}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
         >
           <FaSyncAlt />
-          <span>Yenile</span>
+          <span>Yenilə</span>
         </button>
       </div>
 
@@ -166,29 +168,29 @@ const ReportsList = () => {
       <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
         <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
           <h2 className="font-medium text-gray-700 flex items-center">
-            <FaFilter className="mr-2 text-gray-500" /> Filtreler
+            <FaFilter className="mr-2 text-gray-500" /> Filtrlər
           </h2>
         </div>
         <div className="p-5">
-          <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <form className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Vəziyyət</label>
               <select
                 name="status"
                 value={filter.status}
                 onChange={handleFilterChange}
                 className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
               >
-                <option value="">Tümü</option>
-                <option value={ReportStatus.PENDING}>Beklemede</option>
-                <option value={ReportStatus.UNDER_REVIEW}>İnceleniyor</option>
-                <option value={ReportStatus.RESOLVED}>Çözüldü</option>
-                <option value={ReportStatus.REJECTED}>Reddedildi</option>
+                <option value="">Hamısı</option>
+                <option value={ReportStatus.PENDING}>Gözləyir</option>
+                <option value={ReportStatus.UNDER_REVIEW}>Nəzərdən keçirilir</option>
+                <option value={ReportStatus.RESOLVED}>Həll olunub</option>
+                <option value={ReportStatus.REJECTED}>İmtina olunub</option>
               </select>
             </div>
             
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rapor Nedeni</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Şikayət səbəbi</label>
               <select
                 name="reason"
                 value={filter.reason}
@@ -196,43 +198,22 @@ const ReportsList = () => {
                 className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
               >
                 <option value="">Tümü</option>
-                <option value={ReportReason.INAPPROPRIATE}>Uygunsuz İçerik</option>
-                <option value={ReportReason.MISLEADING}>Yanıltıcı Bilgi</option>
-                <option value={ReportReason.FRAUDULENT}>Dolandırıcılık</option>
-                <option value={ReportReason.DUPLICATE}>Mükerrer İlan</option>
-                <option value={ReportReason.WRONG_CATEGORY}>Yanlış Kategori</option>
+                <option value={ReportReason.INAPPROPRIATE}>Uyğun olmayan Məzmun</option>
+                <option value={ReportReason.MISLEADING}>Yanlış məlumat</option>
+                <option value={ReportReason.FRAUDULENT}>Fırıldaqçılıq</option>
+                <option value={ReportReason.DUPLICATE}>Dublikat Elan</option>
+                <option value={ReportReason.WRONG_CATEGORY}>Yanlış Kategoriya</option>
                 <option value={ReportReason.SPAM}>Spam</option>
-                <option value={ReportReason.OTHER}>Diğer</option>
+                <option value={ReportReason.OTHER}>Digər</option>
               </select>
             </div>
-            
-            <div className="md:col-span-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Arama</label>
-              <div className="flex">
-                <input
-                  type="text"
-                  name="searchTerm"
-                  placeholder="İlan başlığı, kullanıcı adı veya açıklama"
-                  value={filter.searchTerm}
-                  onChange={handleFilterChange}
-                  className="w-full border border-gray-300 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded-r-md hover:bg-primary/90 transition-colors"
-                >
-                  <FaSearch />
-                </button>
-              </div>
-            </div>
-
             <div className="md:col-span-12 flex justify-end">
               <button
                 type="button"
                 onClick={resetFilters}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
               >
-                Filtreleri Sıfırla
+                Filtrləri Sıfırla
               </button>
             </div>
           </form>
@@ -254,7 +235,7 @@ const ReportsList = () => {
       ) : reports.length === 0 ? (
         <div className="bg-blue-50 border border-blue-200 rounded-md p-4 my-6">
           <div className="flex justify-center text-blue-700">
-            Gösterilecek rapor bulunamadı
+            Göstəriləcək Şikayət Tapılmadı.
           </div>
         </div>
       ) : (
@@ -265,27 +246,27 @@ const ReportsList = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      İlan Bilgileri
+                      Elan məlumatları
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Raporlayan
+                      Şikayət edən
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Neden
+                      Səbəb
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Durum
+                      Vəziyyət
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tarih
+                      Tarix
                     </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      İşlemler
+                      Əməliyyatlar
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reports.map((report) => (
+                  {paginatedReports.map((report) => (
                     <tr key={report.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
@@ -320,7 +301,7 @@ const ReportsList = () => {
                           className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <FaEye className="mr-1" />
-                          <span>Görüntüle</span>
+                          <span>Bax</span>
                         </Link>
                       </td>
                     </tr>
@@ -333,11 +314,11 @@ const ReportsList = () => {
           {/* Sayfalama */}
           <div className="flex items-center justify-between bg-white px-4 py-3 mt-4 rounded-lg shadow-md">
             <div className="text-sm text-gray-700">
-              <span>Toplam {totalCount} rapordan </span>
+              <span>Cəmi {totalCount} Şikayətdən </span>
               <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
               <span> - </span>
               <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span>
-              <span> arası gösteriliyor</span>
+              <span> göstərlir</span>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -364,7 +345,7 @@ const ReportsList = () => {
                 }`}
               >
                 <FaChevronLeft className="h-3 w-3" />
-                <span className="ml-1">Önceki</span>
+                <span className="ml-1">Öncəki</span>
               </button>
               
               <div className="hidden md:flex">

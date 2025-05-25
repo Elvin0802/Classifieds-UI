@@ -38,6 +38,9 @@ const messageObservers = new Map();
 // Bağlantı durum değişikliğinde bildirilecek gözlemciler
 const connectionObservers = [];
 
+// Kullanıcı mesaj detayında mı? (global flag)
+window.isChatDetailActive = false;
+
 // Debug log
 const logDebug = (message, ...args) => {
   if (DEBUG) {
@@ -107,22 +110,18 @@ const notifyMessageObservers = (message, chatRoomId) => {
   // Mesaj nesnesinde chatRoomId yoksa ve fonksiyona ikinci parametre olarak geldiyse kullan
   // NOT: API güncellendi ve artık mesajlarda chatRoomId alanı mevcut
   const messageRoomId = message.chatRoomId || chatRoomId;
-  
   if (!message || !messageRoomId) {
     console.error('Invalid message format or missing chatRoomId:', message);
     return;
   }
-  
   // İlgili sohbet odasının observerlarını bilgilendir
   const observers = messageObservers.get(messageRoomId);
   if (observers && observers.length > 0) {
-    // Eğer mesajda chatRoomId yoksa ekle (artık API'den gelen mesajlarda bu alan var)
     let messageToSend = message;
     if (!message.chatRoomId) {
       messageToSend = { ...message, chatRoomId: messageRoomId };
       if (DEBUG) console.log(`Message had no chatRoomId, adding: ${messageRoomId}`, messageToSend);
     }
-    
     observers.forEach(callback => {
       try {
         callback(messageToSend);
@@ -134,6 +133,19 @@ const notifyMessageObservers = (message, chatRoomId) => {
   } else {
     if (DEBUG) console.log(`No observers found for chatRoom: ${messageRoomId}`);
   }
+  // --- GLOBAL OBSERVER (TÜM MESAJLAR) ---
+  const globalObservers = messageObservers.get('*');
+  if (globalObservers && globalObservers.length > 0) {
+    globalObservers.forEach(callback => {
+      try {
+        callback(message);
+      } catch (error) {
+        console.error('Global message observer callback error:', error);
+      }
+    });
+    logDebug(`Notified ${globalObservers.length} global observers for all messages`);
+  }
+  // --- SON ---
 };
 
 // ChatHub URL'ini oluştur - Doğrudan API_URL kullanılacak
@@ -394,6 +406,24 @@ const setupEventListeners = () => {
     // API güncellemesi sonrası mesaj artık chatRoomId içeriyor
     if (message.chatRoomId) {
       notifyMessageObservers(message);
+      // --- YENİ MESAJ BİLDİRİMİ ---
+      try {
+        // Eğer kullanıcı mesaj detayında değilse ve mesajı gönderen mevcut kullanıcı değilse, toast göster
+        if (!window.isChatDetailActive) {
+          // Mevcut kullanıcıyı al
+          const currentUserId = authStorage.getUserId && authStorage.getUserId();
+          if (message.senderId !== currentUserId) {
+            toast.info('Yeni mesajınız var!', {
+              autoClose: 4000,
+              position: 'bottom-right',
+              toastId: `new-message-${message.id}`
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Yeni mesaj bildirimi gösterilemedi:', err);
+      }
+      // --- SON ---
     } else {
       console.warn('Received message without chatRoomId:', message);
     }

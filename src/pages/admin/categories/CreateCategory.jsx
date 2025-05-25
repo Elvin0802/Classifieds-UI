@@ -28,11 +28,11 @@ function CreateCategory() {
     
     try {
       await categoryService.createCategory(formData);
-      toast.success('Kategori başarıyla oluşturuldu.');
+      toast.success('yaradıldı.');
       navigate('/admin/categories');
     } catch (error) {
       console.error('Kategori oluşturulurken hata:', error);
-      toast.error('Kategori oluşturulamadı. Lütfen tekrar deneyin.');
+      toast.error('error.');
     } finally {
       setLoading(false);
     }
@@ -41,12 +41,12 @@ function CreateCategory() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Yeni Kategori Oluştur</h1>
+        <h1 className="text-2xl font-bold">Yeni Kategoriya Yarat</h1>
         <button 
           onClick={() => navigate('/admin/categories')}
           className="btn btn-outline btn-sm"
         >
-          <FaArrowLeft className="mr-2" /> Geri Dön
+          <FaArrowLeft className="mr-2" /> Geri
         </button>
       </div>
       
@@ -55,7 +55,7 @@ function CreateCategory() {
           {/* Kategori Adı */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Kategori Adı*</span>
+              <span className="label-text font-medium">Kategoriya Adı*</span>
             </label>
             <input
               type="text"
@@ -63,7 +63,7 @@ function CreateCategory() {
               value={formData.name}
               onChange={handleChange}
               className="input input-bordered"
-              placeholder="Kategori adını girin"
+              placeholder="Kategoriya adını yazın"
               required
             />
           </div>
@@ -79,7 +79,7 @@ function CreateCategory() {
               ) : (
                 <FaSave className="mr-2" />
               )}
-              Kategori Oluştur
+              Kategoriya Yarat
             </button>
           </div>
         </form>

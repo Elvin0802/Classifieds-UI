@@ -25,7 +25,7 @@ const locationService = {
    */
   getAll: async (params = {}) => {
     try {
-      const response = await apiClient.get(`${LOCATIONS_URL}/GetAll`, { params });
+      const response = await apiClient.get(`${LOCATIONS_URL}/GetAll?CacheKey=AAAAAA&CacheTime=2025-05-24T09%3A31%3A09.627Z`, { params });
       return response.data;
     } catch (error) {
       console.error("Lokasyonlar alınırken hata:", error);
@@ -62,37 +62,6 @@ const locationService = {
       return response.data;
     } catch (error) {
       console.error("Lokasyon detayı alınırken hata:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Bir ile ait ilçeleri getirir
-   * @param {string} provinceId - İl ID'si
-   * @returns {Promise<Object>} İlçe listesi sonucu
-   * @example
-   * // Dönen veri formatı
-   * {
-   *   isSucceeded: true,
-   *   message: "string",
-   *   isFailed: false,
-   *   data: {
-   *     items: [ ... ilçe nesneleri ... ],
-   *     pageNumber: 0,
-   *     pageSize: 0,
-   *     totalCount: 0,
-   *     totalPages: 0
-   *   }
-   * }
-   */
-  getDistricts: async (provinceId) => {
-    try {
-      const response = await apiClient.get(`${LOCATIONS_URL}/GetDistricts`, { 
-        params: { ProvinceId: provinceId } 
-      });
-      return response.data;
-    } catch (error) {
-      console.error("İlçeler alınırken hata:", error);
       throw error;
     }
   },

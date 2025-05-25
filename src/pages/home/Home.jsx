@@ -11,55 +11,19 @@ import { Button, buttonVariants } from '../../components/ui/button';
 import { cn } from '../../components/ui/utils';
 import { Card, CardContent } from '../../components/ui/card';
 import { Alert, AlertDescription } from '../../components/ui/Alert';
+import { toast } from 'react-toastify';
+import authStorage from '../../services/authStorage';
 
 const Home = () => {
-  const [categories, setCategories] = useState([]);
-  const [locations, setLocations] = useState([]);
   const [featuredAds, setFeaturedAds] = useState([]);
   const [loading, setLoading] = useState({
-    categories: true,
-    locations: true,
     featuredAds: true
   });
   const [error, setError] = useState({
-    categories: null,
-    locations: null,
     featuredAds: null
   });
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await categoryService.getAllCategories();
-        if (response && response.isSucceeded && response.data && response.data.items) {
-          setCategories(response.data.items);
-        } else {
-          setError(prev => ({ ...prev, categories: 'Kategoriyalar yuklenmedi.' }));
-        }
-      } catch (err) {
-        console.error('kategoriyalari yukleyende xeta yarandi:', err);
-        setError(prev => ({ ...prev, categories: 'Kategoriyalar yuklenmedi.' }));
-      } finally {
-        setLoading(prev => ({ ...prev, categories: false }));
-      }
-    };
-
-    const fetchLocations = async () => {
-      try {
-        const response = await locationService.getAll();
-        if (response && response.isSucceeded && response.data && response.data.items) {
-          setLocations(response.data.items);
-        } else {
-          setError(prev => ({ ...prev, locations: 'mekanlar yuklenmedi.' }));
-        }
-      } catch (err) {
-        console.error('mekanlari yukleyende xeta yarandi:', err);
-        setError(prev => ({ ...prev, locations: 'mekanlar yuklenmedi.' }));
-      } finally {
-        setLoading(prev => ({ ...prev, locations: false }));
-      }
-    };
-
     const fetchFeaturedAds = async () => {
       try {
         // İstek parametreleri - Sadece öne çıkan ilanları getir
@@ -68,7 +32,8 @@ const Home = () => {
           pageSize: 8, // Ana sayfada 8 ilan gösteriliyor
           sortBy: 'createdAt',
           isDescending: true,
-          adStatus: 1 // Aktif ilanlar
+          adStatus: 1, // Aktif ilanlar
+          isFeatured: true // VIP ilanlar için ekle
         };
         
         // Öne çıkan ilanları getir
@@ -86,10 +51,62 @@ const Home = () => {
       }
     };
 
-    fetchCategories();
-    fetchLocations();
     fetchFeaturedAds();
   }, []);
+
+  // Favorilere ekle/çıkar
+  const handleFavoriteToggle = async (adId) => {
+    try {
+      // İlanı bul
+      const adToUpdate = featuredAds.find(ad => ad.id === adId);
+      
+      if (!adToUpdate) {
+        console.error('İlan bulunamadı:', adId);
+        toast.error('elan yoxdur.');
+        return;
+      }
+      
+      // Kendi ilanımızı favoriye ekleyemeyiz
+      if (adToUpdate.isOwner) {
+        toast.info('Öz elanınızı seçə bilməzsiniz.');
+        return;
+      }
+
+      console.log('İlan işlemi:', adToUpdate);
+      
+      // İlanın durumuna göre işlem yap
+      if (adToUpdate.isSelected) {
+        // Önce API isteği gönder ve başarılı olursa UI'ı güncelle
+        const response = await adService.unselectAd(adId);
+        
+        if (response && response.isSucceeded) {
+          // UI'ı güncelle
+          setFeaturedAds(featuredAds.map(ad => 
+            ad.id === adId ? { ...ad, isSelected: false } : ad
+          ));
+          toast.success('elan çıxarıldı.');
+        } else {
+          toast.error('xəta: ' + (response?.message || 'İşlem başarısız oldu'));
+        }
+      } else {
+        // Önce API isteği gönder ve başarılı olursa UI'ı güncelle
+        const response = await adService.selectAd(adId);
+        
+        if (response && response.isSucceeded) {
+          // UI'ı güncelle
+          setFeaturedAds(featuredAds.map(ad => 
+            ad.id === adId ? { ...ad, isSelected: true } : ad
+          ));
+          toast.success('elan əlavə olundu.');
+        } else {
+          toast.error('xəta: ' + (response?.message || 'İşlem başarısız oldu'));
+        }
+      }
+    } catch (err) {
+      console.error('Favori işlemi sırasında hata oluştu:', err);
+      toast.error('xəta: ' + (err.message || 'xəta'));
+    }
+  };
 
   return (
     <div>
@@ -104,7 +121,7 @@ const Home = () => {
               Kainatın ən kiçik elan platforması.
             </p>
             
-            <SearchBar categories={categories} locations={locations} />
+            <SearchBar />
           </div>
         </div>
       </section>
@@ -136,98 +153,6 @@ const Home = () => {
       </section>
 
       <div className="container mx-auto px-4 py-12">
-        {/* Kategoriler Bölümü */}
-        <section className="mb-16">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Tag className="h-6 w-6 text-primary" /> Kategoriyalar
-            </h2>
-            <Link 
-              to="/ads" 
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "gap-1"
-              )}
-            >
-              Bütün Elanlar <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          {loading.categories ? (
-            <div className="py-8 flex justify-center">
-              <LoadingSpinner />
-            </div>
-          ) : error.categories ? (
-            <Alert variant="destructive">
-              <AlertDescription>{error.categories}</AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {categories.slice(0, 12).map((category) => (
-                <Link key={category.id} to={`/ads?categoryId=${category.id}`}>
-                  <Card className="h-full hover:shadow-md transition-shadow overflow-hidden group">
-                    <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                      <div className="mb-3 p-3 rounded-full bg-primary/10 w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Tag className="h-7 w-7 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-medium text-foreground">{category.name}</h3>
-                      <span className="text-sm text-muted-foreground mt-1">
-                        {category.adCount || 0} elan
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Lokasyonlar Bölümü */}
-        <section className="mb-16">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <MapPin className="h-6 w-6 text-primary" /> Məkanlar
-            </h2>
-            <Link 
-              to="/ads" 
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "gap-1"
-              )}
-            >
-              Bütün Elanlar <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          {loading.locations ? (
-            <div className="py-8 flex justify-center">
-              <LoadingSpinner />
-            </div>
-          ) : error.locations ? (
-            <Alert variant="destructive">
-              <AlertDescription>{error.locations}</AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {locations.slice(0, 12).map((location) => (
-                <Link key={location.id} to={`/ads?locationId=${location.id}`}>
-                  <Card className="h-full hover:shadow-md transition-shadow overflow-hidden group">
-                    <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                      <div className="mb-3 p-3 rounded-full bg-blue-500/10 w-16 h-16 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                        <MapPin className="h-7 w-7 text-blue-500" />
-                      </div>
-                      <h3 className="text-lg font-medium text-foreground">{location.city}</h3>
-                      <span className="text-sm text-muted-foreground mt-1">
-                        {location.country}
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
         {/* Öne Çıkan İlanlar */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-8">
@@ -265,6 +190,7 @@ const Home = () => {
                 <AdCard
                   key={ad.id}
                   ad={ad}
+                  onFavoriteToggle={handleFavoriteToggle}
                 />
               ))}
             </div>

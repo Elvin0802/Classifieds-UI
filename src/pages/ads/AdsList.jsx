@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose }
 import { Card, CardContent } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import authStorage from '../../services/authStorage';
 
 function AdsList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,8 +46,16 @@ function AdsList() {
   const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '12', 10));
   const [showFilters, setShowFilters] = useState(false);
   const [favoriteAds, setFavoriteAds] = useState([]);
-  const [isNew, setIsNew] = useState(searchParams.get('isNew') || '');
-  const [isFeatured, setIsFeatured] = useState(searchParams.get('isFeatured') === 'true');
+  const [isNew, setIsNew] = useState(
+    searchParams.get('isNew') === null ? null : searchParams.get('isNew') === 'true' ? true : searchParams.get('isNew') === 'false' ? false : null
+  );
+  const [isFeatured, setIsFeatured] = useState(
+    searchParams.get('isFeatured') === null ? null : searchParams.get('isFeatured') === 'true' ? true : searchParams.get('isFeatured') === 'false' ? false : null
+  );
+  const [searchedAppUserId, setSearchedAppUserId] = useState(() => {
+    const param = searchParams.get('searchedAppUserId');
+    return param ? param : '';
+  });
 
   // Kategorileri ve konumları yükle
   useEffect(() => {
@@ -65,7 +74,7 @@ function AdsList() {
         }
       } catch (err) {
         console.error('Filtreler yüklenirken hata oluştu:', err);
-        setError('Filtre seçenekleri yüklenemedi.');
+        setError('Filtrlər yüklənmədi.');
       }
     };
 
@@ -92,8 +101,8 @@ function AdsList() {
           searchTitle: searchTerm || null,
           minPrice: minPrice ? parseInt(minPrice, 10) : null,
           maxPrice: maxPrice ? parseInt(maxPrice, 10) : null,
-          isNew: isNew === '' ? null : isNew === 'true',
-          isFeatured: true // Her zaman true gönder
+          isNew: isNew,
+          isFeatured: isFeatured,
         };
         
         console.log('Öne çıkan ilanlar için istek parametreleri:', featuredParams);
@@ -103,12 +112,12 @@ function AdsList() {
         if (response && response.data && response.data.items) {
           setFeaturedAds(response.data.items);
         } else {
-          setFeaturedError('Öne çıkan ilanlar yüklenemedi.');
+          setFeaturedError('xəta.');
           setFeaturedAds([]);
         }
       } catch (err) {
         console.error('Öne çıkan ilanlar yüklenirken hata oluştu:', err);
-        setFeaturedError('Öne çıkan ilanlar yüklenemedi.');
+        setFeaturedError('xəta.');
         setFeaturedAds([]);
       } finally {
         setIsFeaturedLoading(false);
@@ -117,7 +126,7 @@ function AdsList() {
     
     // Sadece "isFeatured" true değilse öne çıkan ilanları ayrıca getir
     // Eğer "isFeatured" true ise, normal fetchAds işlemi zaten öne çıkan ilanları getirecek
-    if (!isFeatured) {
+    if (isFeatured === null) {
       fetchFeaturedAds();
     } else {
       setFeaturedAds([]); // isFeatured filtreleniyorsa öne çıkan ilanları temizle
@@ -167,9 +176,12 @@ function AdsList() {
         categoryId: options.selectedCategory || selectedCategory || null,
         mainCategoryId: options.selectedMainCategory || selectedMainCategory || null,
         locationId: options.selectedLocation || selectedLocation || null,
-        isNew: options.isNew === '' ? null : options.isNew === 'true',
-        isFeatured: options.isFeatured === undefined ? (isFeatured === undefined ? false : Boolean(isFeatured)) : Boolean(options.isFeatured),
-        adStatus: 1 // Sadece aktif ilanları göster
+        isNew: typeof isNew === 'boolean' ? isNew : null,
+        isFeatured: typeof isFeatured === 'boolean' ? isFeatured : null,
+        adStatus: 1,
+        searchedAppUserId: options.searchedAppUserId !== undefined
+          ? (options.searchedAppUserId === '' ? null : options.searchedAppUserId)
+          : (searchedAppUserId === '' ? null : searchedAppUserId)
       };
 
       // Debugging için log
@@ -191,14 +203,15 @@ function AdsList() {
           categoryId: apiParams.categoryId,
           mainCategoryId: apiParams.mainCategoryId,
           locationId: apiParams.locationId,
-          isNew: apiParams.isNew === null ? '' : String(apiParams.isNew),
-          isFeatured: apiParams.isFeatured
+          isNew: isNew === null ? '' : String(isNew),
+          isFeatured: isFeatured === null ? '' : String(isFeatured),
+          searchedAppUserId: apiParams.searchedAppUserId
         })) {
           if (value !== null && value !== undefined && value !== '') {
             updatedParams.set(key, value);
           }
         }
-        setSearchParams(updatedParams, { replace: true }); // replace: true kullanarak ekstra tarayıcı geçmişi oluşturmasını engelliyoruz
+        setSearchParams(updatedParams, { replace: true });
       }
       
       console.log('Normal ilanlar için istek parametreleri:', apiParams);
@@ -216,12 +229,12 @@ function AdsList() {
           setFavoriteAds(response.data.items.filter(ad => ad.isSelected).map(ad => ad.id));
         }
       } else {
-        setError('İlanlar yüklenirken bir hata oluştu.');
+        setError('xəta.');
         setAds([]);
       }
     } catch (err) {
       console.error('İlanlar yüklenirken hata oluştu:', err);
-      setError('İlanlar yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+      setError('xəta');
       setAds([]);
     } finally {
       setIsLoading(false);
@@ -239,6 +252,7 @@ function AdsList() {
     selectedLocation,
     isNew,
     isFeatured,
+    searchedAppUserId,
     setSearchParams
   ]);
 
@@ -294,10 +308,13 @@ function AdsList() {
     if (locationId) setSelectedLocation(locationId);
     
     const isNew = searchParams.get('isNew');
-    if (isNew) setIsNew(isNew);
+    if (isNew) setIsNew(isNew === 'true');
     
     const isFeatured = searchParams.get('isFeatured');
     if (isFeatured) setIsFeatured(isFeatured === 'true');
+
+    const searchedAppUserIdParam = searchParams.get('searchedAppUserId');
+    if (searchedAppUserIdParam !== undefined) setSearchedAppUserId(searchedAppUserIdParam || '');
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Bu ref, arama teriminin son değerini takip etmek için
@@ -391,9 +408,10 @@ function AdsList() {
   // Filtreleri uygula
   const applyFilters = () => {
     fetchAds({
-      currentPage: 1 // Filtreleri uygularken ilk sayfaya dön
+      currentPage: 1,
+      searchedAppUserId
     });
-    setShowFilters(false); // Filtre menüsünü kapat
+    setShowFilters(false);
   };
 
   // Filtreleri temizle
@@ -403,15 +421,14 @@ function AdsList() {
     setSelectedLocation('');
     setMinPrice('');
     setMaxPrice('');
-    setIsNew('');
-    setIsFeatured(false);
+    setIsNew(null);
+    setIsFeatured(null);
     setCurrentPage(1);
-    
+    setSearchedAppUserId('');
     // Temizlenen filtrelerle ilanları yeniden yükle
     setTimeout(() => {
-      fetchAds();
+      fetchAds({ searchedAppUserId: '' });
     }, 0);
-    
     setShowFilters(false);
   };
 
@@ -430,13 +447,13 @@ function AdsList() {
       
       if (!adToUpdate) {
         console.error('İlan bulunamadı:', adId);
-        toast.error('İşlem yapılacak ilan bulunamadı');
+        toast.error('elan yoxdur.');
         return;
       }
       
-      // İlanın sahibiyse favoriye ekleme
+      // Kendi ilanımızı favoriye ekleyemeyiz
       if (adToUpdate.isOwner) {
-        toast.info('Kendi ilanınızı favorilere ekleyemezsiniz');
+        toast.info('Öz elanınızı seçə bilməzsiniz.');
         return;
       }
 
@@ -444,44 +461,47 @@ function AdsList() {
       
       // İlanın durumuna göre işlem yap
       if (adToUpdate.isSelected) {
-        // Önce UI'ı güncelle
-        if (ads.find(ad => ad.id === adId)) {
-          setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
+        // Önce API isteği gönder ve başarılı olursa UI'ı güncelle
+        const response = await adService.unselectAd(adId);
+        
+        if (response && response.isSucceeded) {
+          // UI'ı güncelle
+          if (ads.find(ad => ad.id === adId)) {
+            setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
+          }
+          
+          if (featuredAds.find(ad => ad.id === adId)) {
+            setFeaturedAds(featuredAds.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
+          }
+          
+          setFavoriteAds(favoriteAds.filter(id => id !== adId));
+          toast.success('elan çıxarıldı.');
+        } else {
+          toast.error('xəta: İşlem başarısız oldu');
         }
-        
-        if (featuredAds.find(ad => ad.id === adId)) {
-          setFeaturedAds(featuredAds.map(ad => ad.id === adId ? { ...ad, isSelected: false } : ad));
-        }
-        
-        setFavoriteAds(favoriteAds.filter(id => id !== adId));
-        toast.success('İlan favorilerden çıkarıldı');
-        
-        // Sonra API isteği gönder
-        await adService.unselectAd(adId);
       } else {
-        // Önce UI'ı güncelle
-        if (ads.find(ad => ad.id === adId)) {
-          setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
+        // Önce API isteği gönder ve başarılı olursa UI'ı güncelle
+        const response = await adService.selectAd(adId);
+        
+        if (response && response.isSucceeded) {
+          // UI'ı güncelle
+          if (ads.find(ad => ad.id === adId)) {
+            setAds(ads.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
+          }
+          
+          if (featuredAds.find(ad => ad.id === adId)) {
+            setFeaturedAds(featuredAds.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
+          }
+          
+          setFavoriteAds([...favoriteAds, adId]);
+          toast.success('elan əlavə olundu.');
+        } else {
+          toast.error('xəta: İşlem başarısız oldu');
         }
-        
-        if (featuredAds.find(ad => ad.id === adId)) {
-          setFeaturedAds(featuredAds.map(ad => ad.id === adId ? { ...ad, isSelected: true } : ad));
-        }
-        
-        setFavoriteAds([...favoriteAds, adId]);
-        toast.success('İlan favorilere eklendi');
-        
-        // Sonra API isteği gönder
-        await adService.selectAd(adId);
       }
     } catch (err) {
       console.error('Favori işlemi sırasında hata oluştu:', err);
-      toast.error('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
-      
-      // Hata durumunda ilanları tekrar yükle
-      setTimeout(() => {
-        fetchAds();
-      }, 500);
+      toast.error('xəta: ' + (err.message || 'xəta'));
     }
   };
 
@@ -504,13 +524,12 @@ function AdsList() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-2">
           <Search className="h-6 w-6 text-primary" /> 
-          İlanlar
+          Elanlar
         </h1>
         <p className="text-muted-foreground">
-          {totalCount} ilan bulundu
-          {searchTerm && ` "${searchTerm}" araması için`}
+          {searchTerm && ` "${searchTerm}" axtarışı üçün`}
           {selectedCategory && categories.find(c => c.id === selectedCategory) && 
-            ` - ${categories.find(c => c.id === selectedCategory).name} kategorisinde`}
+            ` - ${categories.find(c => c.id === selectedCategory).name} kategoriyasında`}
         </p>
       </div>
 
@@ -525,7 +544,7 @@ function AdsList() {
               </div>
               <Input
                 type="text"
-                placeholder="İlan ara..."
+                placeholder="Elan axtar..."
                 value={searchTerm}
                 onChange={handleSearchInput}
                 onKeyDown={handleSearch}
@@ -541,7 +560,7 @@ function AdsList() {
               variant="outline" 
               className="w-full flex items-center gap-2"
             >
-              <Filter className="h-4 w-4" /> Filtreler
+              <Filter className="h-4 w-4" /> Filterlər
             </Button>
           </div>
         </div>
@@ -562,7 +581,7 @@ function AdsList() {
                 <SelectValue placeholder="Kategori Seçin" className="font-medium" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="font-medium">Tüm Kategoriler</SelectItem>
+                <SelectItem value="all" className="font-medium">Bütün Kategoriyalar</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category.id} value={category.id} className="font-medium">
                     {category.name}
@@ -583,7 +602,7 @@ function AdsList() {
                   <SelectValue placeholder="Alt Kategori Seçin" className="font-medium" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="font-medium">Tüm Alt Kategoriler</SelectItem>
+                  <SelectItem value="all" className="font-medium">Bütün Alt Kategoriyalar</SelectItem>
                   {mainCategories.map(category => (
                     <SelectItem key={category.id} value={category.id} className="font-medium">
                       {category.name}
@@ -601,10 +620,10 @@ function AdsList() {
               onValueChange={(value) => setSelectedLocation(value === "all" ? "" : value)}
             >
               <SelectTrigger className="bg-white dark:bg-gray-900 shadow-sm border-gray-300 dark:border-gray-700">
-                <SelectValue placeholder="Konum Seçin" className="font-medium" />
+                <SelectValue placeholder="Məkan Seçin" className="font-medium" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="font-medium">Tüm Konumlar</SelectItem>
+                <SelectItem value="all" className="font-medium">Bütün Məkanlar</SelectItem>
                 {locations.map(location => (
                   <SelectItem key={location.id} value={location.id} className="font-medium">
                     {location.city}, {location.country}
@@ -618,18 +637,18 @@ function AdsList() {
           <div className="w-96 flex gap-2 items-center">
             <Input
               type="number"
-              placeholder="Min Fiyat"
+              placeholder="Min Qiymət"
               value={minPrice}
               onChange={(e) => setMinPrice(e.target.value)}
-              className="w-1/2"
+              className="w-36"
             />
             <span className="text-foreground">-</span>
             <Input
               type="number"
-              placeholder="Max Fiyat"
+              placeholder="Max Qiymət"
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
-              className="w-1/2"
+              className="w-36"
             />
           </div>
 
@@ -653,10 +672,10 @@ function AdsList() {
                 <SelectValue placeholder="Sıralama Seçin" className="font-medium" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="createdAt-desc" className="font-medium">En Yeni</SelectItem>
-                <SelectItem value="createdAt-asc" className="font-medium">En Eski</SelectItem>
-                <SelectItem value="price-asc" className="font-medium">Fiyat (Düşükten Yükseğe)</SelectItem>
-                <SelectItem value="price-desc" className="font-medium">Fiyat (Yüksekten Düşüğe)</SelectItem>
+                <SelectItem value="createdAt-desc" className="font-medium">Ən Yeni</SelectItem>
+                <SelectItem value="createdAt-asc" className="font-medium">Ən Köhnə</SelectItem>
+                <SelectItem value="price-asc" className="font-medium">Qiymət (Aşağıdan Yuxarıya)</SelectItem>
+                <SelectItem value="price-desc" className="font-medium">Qiymət (Yuxarıdan Aşağıya)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -665,47 +684,72 @@ function AdsList() {
         {/* Masaüstü için ek filtreler ve butonlar */}
         <div className="hidden md:flex justify-between items-center mb-2">
           <div className="flex items-center gap-6">
+            {/* isNew üçlü seçim */}
             <div className="flex items-center gap-2">
-              <Switch
-                id="desktop-isNew"
-                checked={isNew === 'true'}
-                onCheckedChange={(checked) => setIsNew(checked ? 'true' : 'false')}
-              />
-              <Label htmlFor="desktop-isNew" className="cursor-pointer">Sadece Sıfır Ürünler</Label>
+              <Label className="cursor-pointer">Məhsulun vəziyyəti:</Label>
+              <Select
+                value={isNew === null ? 'all' : isNew === true ? 'new' : 'old'}
+                onValueChange={value => {
+                  if (value === 'all') setIsNew(null);
+                  else if (value === 'new') setIsNew(true);
+                  else setIsNew(false);
+                }}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Hamısı</SelectItem>
+                  <SelectItem value="new">Yalnız Yeni</SelectItem>
+                  <SelectItem value="old">Yalnız Köhnə</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
+            {/* isFeatured üçlü seçim */}
             <div className="flex items-center gap-2">
-              <Switch
-                id="desktop-isFeatured"
-                checked={isFeatured}
-                onCheckedChange={(checked) => setIsFeatured(checked)}
-              />
-              <Label htmlFor="desktop-isFeatured" className="cursor-pointer">Sadece Öne Çıkan İlanlar</Label>
+              <Label className="cursor-pointer">VİP Elan:</Label>
+              <Select
+                value={isFeatured === null ? 'all' : isFeatured === true ? 'featured' : 'notfeatured'}
+                onValueChange={value => {
+                  if (value === 'all') setIsFeatured(null);
+                  else if (value === 'featured') setIsFeatured(true);
+                  else setIsFeatured(false);
+                }}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Hamısı</SelectItem>
+                  <SelectItem value="featured">Yalnız VİP</SelectItem>
+                  <SelectItem value="notfeatured">Yalnız Normal</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="flex gap-2">
             <Button variant="outline" onClick={clearFilters} size="sm" className="flex items-center gap-1">
-              <CircleX className="h-3 w-3" /> Filtreleri Temizle
+              <CircleX className="h-3 w-3" /> Filterləri Təmizlə
             </Button>
             <Button onClick={applyFilters} size="sm" className="flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Filtreleri Uygula
+              <Filter className="h-3 w-3" /> Filterləri Tətbiq Et
             </Button>
           </div>
         </div>
 
         {/* Mobil ekranda filtreler için yan panel */}
         <Sheet open={showFilters} onOpenChange={setShowFilters}>
-          <SheetContent side="right" className="w-full sm:max-w-lg">
+          <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto max-h-[100vh]">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" /> İlan Filtreleri
+                <Filter className="h-5 w-5" /> Elan Filterləri
               </SheetTitle>
             </SheetHeader>
             
             <div className="py-6 space-y-6">
               <div className="space-y-3">
-                <Label className="text-foreground">Kategori</Label>
+                <Label className="text-foreground">Kategoriya</Label>
                 <Select 
                   value={selectedCategory || "all"} 
                   onValueChange={(value) => {
@@ -717,7 +761,7 @@ function AdsList() {
                     <SelectValue placeholder="Kategori Seçin" className="font-medium" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="font-medium">Tüm Kategoriler</SelectItem>
+                    <SelectItem value="all" className="font-medium">Bütün Kategoriyalar</SelectItem>
                     {categories.map(category => (
                       <SelectItem key={category.id} value={category.id} className="font-medium">
                         {category.name}
@@ -729,7 +773,7 @@ function AdsList() {
 
               {selectedCategory && mainCategories.length > 0 && (
                 <div className="space-y-3">
-                  <Label className="text-foreground">Alt Kategori</Label>
+                  <Label className="text-foreground">Alt Kategoriya</Label>
                   <Select 
                     value={selectedMainCategory || "all"} 
                     onValueChange={(value) => setSelectedMainCategory(value === "all" ? "" : value)}
@@ -738,7 +782,7 @@ function AdsList() {
                       <SelectValue placeholder="Alt Kategori Seçin" className="font-medium" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all" className="font-medium">Tüm Alt Kategoriler</SelectItem>
+                      <SelectItem value="all" className="font-medium">Bütün Alt Kategoriyalar</SelectItem>
                       {mainCategories.map(category => (
                         <SelectItem key={category.id} value={category.id} className="font-medium">
                           {category.name}
@@ -750,7 +794,7 @@ function AdsList() {
               )}
 
               <div className="space-y-3">
-                <Label className="text-foreground">Konum</Label>
+                <Label className="text-foreground">Məkan</Label>
                 <Select 
                   value={selectedLocation || "all"} 
                   onValueChange={(value) => setSelectedLocation(value === "all" ? "" : value)}
@@ -759,7 +803,7 @@ function AdsList() {
                     <SelectValue placeholder="Konum Seçin" className="font-medium" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="font-medium">Tüm Konumlar</SelectItem>
+                    <SelectItem value="all" className="font-medium">Bütün Məkanlar</SelectItem>
                     {locations.map(location => (
                       <SelectItem key={location.id} value={location.id} className="font-medium">
                         {location.city}, {location.country}
@@ -772,7 +816,7 @@ function AdsList() {
               <Separator />
 
               <div className="space-y-4">
-                <Label className="text-foreground">Fiyat Aralığı</Label>
+                <Label className="text-foreground">Qiymət Aralığı</Label>
                 <div className="flex gap-4 items-center">
                   <Input
                     type="number"
@@ -795,25 +839,45 @@ function AdsList() {
               <Separator />
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="isNew" className="text-foreground">Sadece Sıfır Ürünler</Label>
-                  <Switch
-                    id="isNew"
-                    checked={isNew === 'true'}
-                    onCheckedChange={(checked) => setIsNew(checked ? 'true' : 'false')}
-                  />
-                </div>
+                <Label className="text-foreground">Məhsulun vəziyyəti</Label>
+                <Select
+                  value={isNew === null ? 'all' : isNew === true ? 'new' : 'old'}
+                  onValueChange={value => {
+                    if (value === 'all') setIsNew(null);
+                    else if (value === 'new') setIsNew(true);
+                    else setIsNew(false);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Hamısı</SelectItem>
+                    <SelectItem value="new">Yalnız Yeni</SelectItem>
+                    <SelectItem value="old">Yalnız Köhnə</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="isFeatured" className="text-foreground">Sadece Öne Çıkan İlanlar</Label>
-                  <Switch
-                    id="isFeatured"
-                    checked={isFeatured}
-                    onCheckedChange={(checked) => setIsFeatured(checked)}
-                  />
-                </div>
+                <Label className="text-foreground">VİP Elan</Label>
+                <Select
+                  value={isFeatured === null ? 'all' : isFeatured === true ? 'featured' : 'notfeatured'}
+                  onValueChange={value => {
+                    if (value === 'all') setIsFeatured(null);
+                    else if (value === 'featured') setIsFeatured(true);
+                    else setIsFeatured(false);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Hamısı</SelectItem>
+                    <SelectItem value="featured">Yalnız VİP</SelectItem>
+                    <SelectItem value="notfeatured">Yalnız Normal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Separator />
@@ -834,10 +898,10 @@ function AdsList() {
                     <SelectValue placeholder="Sıralama Seçin" className="font-medium" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="createdAt-desc" className="font-medium">En Yeni</SelectItem>
-                    <SelectItem value="createdAt-asc" className="font-medium">En Eski</SelectItem>
-                    <SelectItem value="price-asc" className="font-medium">Fiyat (Düşükten Yükseğe)</SelectItem>
-                    <SelectItem value="price-desc" className="font-medium">Fiyat (Yüksekten Düşüğe)</SelectItem>
+                    <SelectItem value="createdAt-desc" className="font-medium">Ən Yeni</SelectItem>
+                    <SelectItem value="createdAt-asc" className="font-medium">Ən Köhnə</SelectItem>
+                    <SelectItem value="price-asc" className="font-medium">Qiymət (Aşağıdan Yuxarıya)</SelectItem>
+                    <SelectItem value="price-desc" className="font-medium">Qiymət (Yuxarıdan Aşağıya)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -845,11 +909,11 @@ function AdsList() {
 
             <SheetFooter className="flex flex-col sm:flex-row gap-3 mt-4">
               <Button variant="outline" className="w-full" onClick={clearFilters}>
-                <CircleX className="mr-2 h-4 w-4" /> Filtreleri Temizle
+                <CircleX className="mr-2 h-4 w-4" /> Filterləri Təmizlə
               </Button>
               <SheetClose asChild>
                 <Button className="w-full" onClick={applyFilters}>
-                  <Filter className="mr-2 h-4 w-4" /> Filtreleri Uygula
+                  <Filter className="mr-2 h-4 w-4" /> Filterləri Tətbiq Et
                 </Button>
               </SheetClose>
             </SheetFooter>
@@ -860,8 +924,8 @@ function AdsList() {
       {/* Aktif filtreler */}
       <div className="flex flex-wrap gap-2 mt-3">
         {searchTerm && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Arama: {searchTerm}
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            Axtarış: {searchTerm}
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
               setSearchTerm('');
               fetchAds({ searchTerm: '' });
@@ -870,8 +934,8 @@ function AdsList() {
         )}
         
         {selectedCategory && categories.find(c => c.id === selectedCategory) && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Kategori: {categories.find(c => c.id === selectedCategory).name}
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            Kategoriya: {categories.find(c => c.id === selectedCategory).name}
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
               setSelectedCategory('');
               setSelectedMainCategory('');
@@ -881,8 +945,8 @@ function AdsList() {
         )}
         
         {selectedMainCategory && mainCategories.find(c => c.id === selectedMainCategory) && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Alt Kategori: {mainCategories.find(c => c.id === selectedMainCategory).name}
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            Alt Kategoriya: {mainCategories.find(c => c.id === selectedMainCategory).name}
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
               setSelectedMainCategory('');
               fetchAds({ selectedMainCategory: '' });
@@ -891,8 +955,8 @@ function AdsList() {
         )}
         
         {selectedLocation && locations.find(l => l.id === selectedLocation) && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Konum: {locations.find(l => l.id === selectedLocation).city}, {locations.find(l => l.id === selectedLocation).country}
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            Məkan: {locations.find(l => l.id === selectedLocation).city}, {locations.find(l => l.id === selectedLocation).country}
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
               setSelectedLocation('');
               fetchAds({ selectedLocation: '' });
@@ -901,8 +965,8 @@ function AdsList() {
         )}
         
         {(minPrice || maxPrice) && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Fiyat: {minPrice || '0'} TL - {maxPrice || '∞'} TL
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            Qiymət: {minPrice || '0'} AZN - {maxPrice || '∞'} AZN
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
               setMinPrice('');
               setMaxPrice('');
@@ -911,33 +975,33 @@ function AdsList() {
           </Badge>
         )}
         
-        {isNew === 'true' && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Sadece Sıfır Ürünler
+        {isNew !== null && (
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            {isNew === true ? 'Sadəcə Yeni Məhsullar' : 'Sadəcə Köhnə Məhsullar'}
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
-              setIsNew('');
-              fetchAds({ isNew: '' });
+              setIsNew(null);
+              fetchAds({ isNew: null });
             }} />
           </Badge>
         )}
         
-        {isFeatured && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            Sadece Öne Çıkan İlanlar
+        {isFeatured !== null && (
+          <Badge variant="outline" className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-foreground text-sm px-3 py-1">
+            {isFeatured === true ? 'Sadece VİP Elanlar' : 'Sadece Normal Elanlar'}
             <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => {
-              setIsFeatured(false);
-              fetchAds({ isFeatured: false });
+              setIsFeatured(null);
+              fetchAds({ isFeatured: null });
             }} />
           </Badge>
         )}
       </div>
 
       {/* Öne Çıkan İlanlar */}
-      {!isFeaturedLoading && featuredAds.length > 0 && !isFeatured && (
+      {!isFeaturedLoading && featuredAds.length > 0 && isFeatured === null && (
         <div className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <CirclePlus className="h-5 w-5 text-primary" /> Öne Çıkan İlanlar
+              <CirclePlus className="h-5 w-5 text-primary" /> VİP Elanlar
             </h2>
           </div>
           
@@ -954,7 +1018,7 @@ function AdsList() {
           ) : featuredAds.length === 0 ? (
             <Card>
               <CardContent className="p-4 text-center text-muted-foreground">
-                Öne çıkan ilan bulunamadı.
+               VİP elan tapılmadı.
               </CardContent>
             </Card>
           ) : (
@@ -989,13 +1053,13 @@ function AdsList() {
             <div className="flex flex-col items-center justify-center gap-4">
               <CircleX className="h-16 w-16 text-muted-foreground" />
               <div>
-                <h3 className="text-lg font-medium text-foreground mb-1">Sonuç Bulunamadı</h3>
+                <h3 className="text-lg font-medium text-foreground mb-1">Nəticə Tapılmadı</h3>
                 <p className="text-muted-foreground">
-                  Arama kriterlerinize uygun ilan bulunamadı. Filtreleri değiştirerek tekrar deneyin.
+                Axtarış meyarlarınıza uyğun heç bir elan tapılmadı. Filtrləri dəyişdirin və yenidən cəhd edin.
                 </p>
               </div>
               <Button onClick={clearFilters} variant="outline" className="mt-2">
-                Filtreleri Temizle
+                Filterləri Təmizlə
               </Button>
             </div>
           </CardContent>
