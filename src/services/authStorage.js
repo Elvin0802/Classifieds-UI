@@ -5,7 +5,8 @@
 const AUTH_KEYS = {
   IS_LOGIN: 'isLogin',
   IS_ADMIN: 'isAdmin',
-  USER_ID: 'userId'
+  USER_ID: 'userId',
+  CHAT_NOTIFICATIONS_ENABLED: 'chatNotificationsEnabled' // Chat notification toggle
 };
 
 // Yardımcı fonksiyonlar
@@ -47,6 +48,12 @@ function setBooleanItem(key, value) {
   return setItem(key, value ? 'true' : 'false');
 }
 
+function getBooleanItemWithDefault(key, defaultValue) {
+  const value = getItem(key);
+  if (value === null || value === undefined) return defaultValue;
+  return value === 'true';
+}
+
 const authStorage = {
   // Login durumu işlemleri
   getIsLogin() {
@@ -74,11 +81,21 @@ const authStorage = {
     return setItem(AUTH_KEYS.USER_ID, userId);
   },
 
+  // Chat notification işlemleri
+  getChatNotificationsEnabled() {
+    // Varsayılan: true
+    return getBooleanItemWithDefault(AUTH_KEYS.CHAT_NOTIFICATIONS_ENABLED, true);
+  },
+  setChatNotificationsEnabled(enabled) {
+    return setBooleanItem(AUTH_KEYS.CHAT_NOTIFICATIONS_ENABLED, enabled);
+  },
+
   // Tüm auth verilerini temizle
   clear() {
     setBooleanItem(AUTH_KEYS.IS_LOGIN, false);
     setBooleanItem(AUTH_KEYS.IS_ADMIN, false);
     removeItem(AUTH_KEYS.USER_ID);
+    setBooleanItem(AUTH_KEYS.CHAT_NOTIFICATIONS_ENABLED, true); // Varsayılan true
   }
 };
 

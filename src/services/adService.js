@@ -11,9 +11,9 @@ const ADS_URL = `${API_URL}/Ads`;
 export const AdStatus = {
   PENDING: 0,
   ACTIVE: 1,
-  REJECTED: 2,
-  SOLD: 3,
-  EXPIRED: 4
+  REJECTED: 3,
+  ARCHİVED: 4,
+  EXPIRED: 2
 };
 
 // Giriş yapmış kullanıcı ID'sini al

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaPlus, FaTrash, FaEye, FaFilter, FaSearch, FaList, FaFolder } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import categoryService from '../../../services/categoryService';
@@ -12,11 +12,13 @@ function AdminCategories() {
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'main', 'sub'
   const [searchTerm, setSearchTerm] = useState('');
   
+  const navigate = useNavigate();
+  
   // Kategorileri yükle
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const response = await categoryService.getAllCategories();
+      const response = await categoryService.getAllCategories({ pageNumber: 1, pageSize: 1000 });
       setCategories(response.data.items || []);
     } catch (error) {
       console.error('Kategoriler alınırken hata:', error);
@@ -30,7 +32,7 @@ function AdminCategories() {
   const fetchMainCategories = async () => {
     setLoading(true);
     try {
-      const response = await categoryService.getAllMainCategories();
+      const response = await categoryService.getAllMainCategories({ pageNumber: 1, pageSize: 1000 });
       setMainCategories(response.data.items || []);
     } catch (error) {
       console.error('Ana kategoriler alınırken hata:', error);
@@ -44,7 +46,7 @@ function AdminCategories() {
   const fetchSubCategories = async () => {
     setLoading(true);
     try {
-      const response = await categoryService.getAllSubCategories();
+      const response = await categoryService.getAllSubCategories({ pageNumber: 1, pageSize: 1000 });
       setSubCategories(response.data.items || []);
     } catch (error) {
       console.error('Alt kategoriler alınırken hata:', error);
@@ -66,23 +68,20 @@ function AdminCategories() {
   }, [activeTab]);
   
   // Kategori silme işlemi
-  const handleDeleteCategory = async (categoryId, categoryType) => {
+  const handleDeleteCategory = async (categoryId) => {
     if (window.confirm('dəqiq simək istayirsiz?')) {
       try {
         setLoading(true);
         let response;
-        
-        if (categoryType === 'main') {
+        if (activeTab === 'main') {
           response = await categoryService.deleteMainCategory(categoryId);
-        } else if (categoryType === 'sub') {
+        } else if (activeTab === 'sub') {
           response = await categoryService.deleteSubCategory(categoryId);
         } else {
           response = await categoryService.deleteCategory(categoryId);
         }
-        
         if (response.isSucceeded) {
           toast.success('Kategoriya silindi.');
-          // Kategori listesini yeniden yükle
           if (activeTab === 'all') {
             fetchCategories();
           } else if (activeTab === 'main') {
@@ -142,6 +141,10 @@ function AdminCategories() {
     return '-';
   };
   
+  const handleShowSubCategory = (subCategoryId) => {
+    navigate(`/admin/categories/${subCategoryId}`, { state: { activeTab: 'sub' } });
+  };
+  
   return (
     <div>
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
@@ -190,7 +193,7 @@ function AdminCategories() {
           <div className="relative w-full md:w-64">
             <input
               type="text"
-              placeholder="Kategori ara..."
+              placeholder="Kategoriya axtar..."
               className="input input-bordered w-full pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -241,13 +244,23 @@ function AdminCategories() {
                           {(!category.type) && (
                             <Link 
                               to={`/admin/categories/${category.id}`} 
+                              state={{ activeTab }}
                               className="btn btn-ghost btn-xs"
                             >
                               <FaEye className="text-blue-500" />
                             </Link>
                           )}
+                          {activeTab === 'sub' && (
+                            <button 
+                              onClick={() => handleShowSubCategory(category.id)}
+                              className="btn btn-ghost btn-xs"
+                              title="Detay"
+                            >
+                              <FaEye className="text-blue-500" />
+                            </button>
+                          )}
                           <button 
-                            onClick={() => handleDeleteCategory(category.id, category.type)}
+                            onClick={() => handleDeleteCategory(category.id)}
                             className="btn btn-ghost btn-xs"
                           >
                             <FaTrash className="text-red-500" />

@@ -73,7 +73,7 @@ function CreateAd() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await categoryService.getAllCategories();
+        const response = await categoryService.getAllCategories({ pageNumber: 1, pageSize: 1000 });
         setCategories(response.data?.items || []);
       } catch (error) {
         console.error('Kategoriler alınırken hata:', error);
@@ -114,7 +114,7 @@ function CreateAd() {
       
       try {
         // Kategori detayını getir ve içindeki ana kategorileri kullan
-        const response = await categoryService.getCategoryById(formData.categoryId);
+        const response = await categoryService.getCategoryById(formData.categoryId, { pageNumber: 1, pageSize: 1000 });
         const category = response.data?.item;
         
         if (category && category.mainCategories) {
@@ -152,7 +152,7 @@ function CreateAd() {
       
       try {
         // Ana kategori detayını getir ve içindeki alt kategorileri kullan
-        const response = await categoryService.getMainCategoryById(formData.mainCategoryId);
+        const response = await categoryService.getMainCategoryById(formData.mainCategoryId, { pageNumber: 1, pageSize: 1000 });
         const mainCategory = response.data?.item;
         
         if (mainCategory && mainCategory.subCategories) {
@@ -252,43 +252,48 @@ function CreateAd() {
     
     // Validation
     if (!formData.title.trim()) {
-      setError('Elan başlığı məcburidir');
+      toast.error("Elan başlığı məcburidir");
       setPageLoading(false);
       return;
     }
     
     if (!formData.description.trim()) {
-      setError('Elan açıqlaması məcburidir');
+      toast.error("Elan açıqlaması məcburidir");
       setPageLoading(false);
       return;
     }
     
     if (!formData.price || isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0) {
       setError('Düzgün qiymət daxil edin');
+      toast.error("Düzgün qiymət daxil edin");
       setPageLoading(false);
       return;
     }
     
     if (!formData.categoryId) {
       setError('Mütləq kategoriya seçin');
+      toast.error("Mütləq kategoriya seçin");
       setPageLoading(false);
       return;
     }
     
     if (!formData.mainCategoryId) {
       setError('Mütləq alt kategoriya seçin');
+      toast.error("Mütləq alt kategoriya seçin");
       setPageLoading(false);
       return;
     }
     
     if (!formData.locationId) {
       setError('Mütləq Məkan seçin');
+      toast.error("Mütləq Məkan seçin");
       setPageLoading(false);
       return;
     }
     
     if (formData.images.length === 0) {
       setError('Ən az 1 foto seçin');
+      toast.error("Ən az 1 foto seçin");
       setPageLoading(false);
       return;
     }
@@ -381,7 +386,7 @@ function CreateAd() {
           value={value || ''}
           onChange={(e) => handleSubCategoryValueChange(subCategoryId, e.target.value)}
           className="input input-bordered w-full"
-          placeholder={`${name} değerini girin`}
+          placeholder={`${name} daxil edin.`}
         />
       );
     }

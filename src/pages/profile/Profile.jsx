@@ -20,6 +20,7 @@ import { Label } from '../../components/ui/label';
 import { Separator } from '../../components/ui/separator';
 import { cn } from '../../components/ui/utils';
 import AdCard from '../../components/ad/AdCard';
+import { Switch } from '../../components/ui/switch';
 
 const Profile = () => {
   // State tanımlamaları
@@ -36,6 +37,7 @@ const Profile = () => {
     newPasswordConfirm: ''
   });
   const [formError, setFormError] = useState('');
+  const [chatNotificationsEnabled, setChatNotificationsEnabled] = useState(authStorage.getChatNotificationsEnabled());
 
   // Kullanıcı verilerini getir
   useEffect(() => {
@@ -192,6 +194,12 @@ const Profile = () => {
     return `${diffInYears} il öncə`;
   };
 
+  // Chat notification toggle değişimi
+  const handleChatNotificationsToggle = (value) => {
+    setChatNotificationsEnabled(value);
+    authStorage.setChatNotificationsEnabled(value);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-10 flex justify-center">
@@ -254,6 +262,11 @@ const Profile = () => {
                 </Link>
               </Button>
             </CardFooter>
+            {/* Chat notification toggle */}
+            <div className="w-full flex items-center justify-between mt-2 px-4 mb-8">
+              <span className="text-sm text-muted-foreground">Söhbət Bildirişlərini Aç / Bağla</span>
+              <Switch checked={chatNotificationsEnabled} onCheckedChange={handleChatNotificationsToggle} />
+            </div>
           </Card>
 
           {/* Şifre Değiştirme Kartı */}
@@ -394,11 +407,6 @@ const Profile = () => {
                     
                     {!adsLoading && ads.length > 0 && (
                       <div className="flex justify-center mt-6">
-                        <Button variant="outline" asChild>
-                          <Link to={`/ads?myAds=${tab}`} className="flex items-center gap-1">
-                            <LayoutDashboard className="h-4 w-4" /> Hamısına Bax <ArrowRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
                       </div>
                     )}
                   </TabsContent>

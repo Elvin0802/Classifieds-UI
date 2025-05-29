@@ -24,7 +24,7 @@ function CreateSubCategory() {
   useEffect(() => {
     const fetchMainCategories = async () => {
       try {
-        const response = await categoryService.getAllMainCategories();
+        const response = await categoryService.getAllMainCategories({ pageNumber: 1, pageSize: 1000 });
         setMainCategories(response.data.items || []);
       } catch (error) {
         console.error('Ana kategoriler alınırken hata:', error);
@@ -134,7 +134,7 @@ function CreateSubCategory() {
                 value={formData.name}
                 onChange={handleChange}
                 className="input input-bordered"
-                placeholder="Alt kategori adını girin"
+                placeholder="Alt kategoriya adını daxil edin..."
                 required
               />
             </div>

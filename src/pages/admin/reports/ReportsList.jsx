@@ -144,7 +144,7 @@ const ReportsList = () => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('az-AZ', {
       year: 'numeric',
-      month: 'long',
+      month: 'numeric',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -197,7 +197,7 @@ const ReportsList = () => {
                 onChange={handleFilterChange}
                 className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
               >
-                <option value="">Tümü</option>
+                <option value="">Hamısı</option>
                 <option value={ReportReason.INAPPROPRIATE}>Uyğun olmayan Məzmun</option>
                 <option value={ReportReason.MISLEADING}>Yanlış məlumat</option>
                 <option value={ReportReason.FRAUDULENT}>Fırıldaqçılıq</option>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaCalendar, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaFlag, FaHeart, FaRegHeart, FaArrowLeft, FaTag, FaChevronRight, FaStar, FaEye, FaClock, FaComment, FaExclamationCircle, FaEdit, FaCheck, FaTimes, FaSpinner, FaCrown } from 'react-icons/fa';
+import { Heart } from 'lucide-react';
 import { toast } from 'react-toastify';
 import adService from '../../services/adService';
 import reportService from '../../services/reportService';
@@ -69,7 +70,7 @@ function AdDetail() {
     
     try {
       const response = await adService.getUserAds(userId, { 
-        pageSize: 12,
+        pageSize: 24,
         adStatus: 1
       });
       
@@ -398,21 +399,42 @@ function AdDetail() {
         <div className="lg:col-span-3">
           {/* İlan Başlığı */}
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-            <div className="flex flex-wrap justify-between items-center">
-              <div className="flex flex-col w-full">
-                <div className="flex items-center gap-6 flex-wrap">
-                  <h1 className="text-2xl font-bold text-gray-800">{ad.title}</h1>
-                  <span className="text-xl font-bold text-primary">{formatPrice(ad.price)}</span>
-                  {ad.isFeatured && (
-                    <span className="bg-yellow-400 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
-                      <FaCrown className="h-3 w-3" /> VIP Elan
-                    </span>
-                  )}
-                </div>
+            <div className="flex items-center gap-6 flex-wrap justify-between">
+              <div className="flex items-center gap-6 flex-wrap">
+                <h1 className="text-2xl font-bold text-gray-800">{ad.title}</h1>
+                <span className="text-xl font-bold text-primary">{formatPrice(ad.price)}</span>
+                {ad.isFeatured && (
+                  <span className="bg-yellow-400 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                    <FaCrown className="h-3 w-3" /> VIP Elan
+                  </span>
+                )}
+                {isAuthenticated && ad.isOwner && !ad.isFeatured && (
+                  <button
+                    className="btn btn-warning flex items-center gap-2"
+                    onClick={() => setShowFeatureModal(true)}
+                  >
+                    <FaCrown className="h-4 w-4" /> VIP et
+                  </button>
+                )}
               </div>
-              
-              {/* Eylem Butonları - Sağ Üstte */}
-              {/* (isAdmin || ad.isOwner) için edit ve delete butonları buradan kaldırıldı */}
+              {/* Favori butonu en sağda */}
+              {isAuthenticated && !ad.isOwner && (
+                <button
+                  className="bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-sm cursor-pointer transition-colors"
+                  onClick={() => handleToggleFavorite(ad.id)}
+                  title={isFavorited ? 'Seçilmişlərdən çıxar' : 'Seçilmişlərə əlavə et'}
+                  type="button"
+                  style={{ marginLeft: 'auto' }}
+                >
+                  <Heart
+                    className={
+                      isFavorited
+                        ? 'w-6 h-6 fill-red-500 text-red-500'
+                        : 'w-6 h-6 text-gray-500'
+                    }
+                  />
+                </button>
+              )}
             </div>
           </div>
           
@@ -672,9 +694,6 @@ function AdDetail() {
                     </div>
                     <div>
                       <h4 className="font-medium">{ad.appUser.name}</h4>
-                      <p className="text-sm text-gray-500">
-                        Üzvlük: {formatDate(ad.appUser.createdAt)}
-                      </p>
                     </div>
                   </div>
                   
@@ -785,7 +804,7 @@ function AdDetail() {
                   </>
                 ) : (
                   <>
-                    Statusu dəyişdir: {getStatusName(ad.adStatus)}
+                    Statusu dəyişdir: {getStatusName(ad.status)}
                   </>
                 )}
               </button>

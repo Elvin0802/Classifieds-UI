@@ -413,11 +413,14 @@ const setupEventListeners = () => {
           // Mevcut kullanıcıyı al
           const currentUserId = authStorage.getUserId && authStorage.getUserId();
           if (message.senderId !== currentUserId) {
-            toast.info('Yeni mesajınız var!', {
-              autoClose: 4000,
-              position: 'bottom-right',
-              toastId: `new-message-${message.id}`
-            });
+            // Bildirim ayarı kontrolü
+            if (authStorage.getChatNotificationsEnabled()) {
+              toast.info('Yeni mesajınız var!', {
+                autoClose: 4000,
+                position: 'bottom-right',
+                toastId: `new-message-${message.id}`
+              });
+            }
           }
         }
       } catch (err) {
